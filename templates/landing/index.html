@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ T.hero_headline }}{% endblock %}
+
+{% block content %}
+
+<!-- ── Hero ─────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-content">
+      <h1>{{ T.hero_headline }}</h1>
+      <p>{{ T.hero_sub }}</p>
+      <div class="hero-cta">
+        <a href="{% url 'register' %}" class="btn btn-primary btn-lg">{{ T.hero_cta }}</a>
+        <a href="{% url 'course_catalog' %}" class="btn btn-outline btn-lg" style="border-color:rgba(255,255,255,.5);color:#fff;">{{ T.hero_browse }}</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Stats bar ─────────────────────────────────────────────────────── -->
+<div class="stats-bar">
+  <div class="stats-bar-inner">
+    <div class="stat-item">
+      <strong>{{ stats.courses }}+</strong>
+      <span>{{ T.stats_courses }}</span>
+    </div>
+    <div class="stat-item">
+      <strong>{{ stats.students }}+</strong>
+      <span>{{ T.stats_students }}</span>
+    </div>
+    <div class="stat-item">
+      <strong>{{ stats.subjects }}</strong>
+      <span>{{ T.stats_subjects }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Featured Courses ──────────────────────────────────────────────── -->
+<section class="section" style="background:var(--bg);">
+  <div class="container">
+    <div class="section-header-row">
+      <div class="section-header" style="margin-bottom:0;">
+        <h2>{{ T.section_featured }}</h2>
+      </div>
+      <a href="{% url 'course_catalog' %}" class="btn btn-ghost btn-sm">View all &rarr;</a>
+    </div>
+
+    {% if featured_courses %}
+      <div class="course-grid">
+        {% for course in featured_courses %}
+          <a href="{% url 'course_detail' course.pk %}" class="card course-card" style="text-decoration:none;">
+            <div class="course-card-thumb">
+              {% if course.thumbnail %}
+                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}">
+              {% else %}
+                <div class="no-thumb">
+                  {% if course.subject_area.name == 'programming' %}💻
+                  {% elif course.subject_area.name == 'aws' %}☁️
+                  {% elif course.subject_area.name == 'ml_ai' %}🤖
+                  {% elif course.subject_area.name == 'blockchain' %}⛓️
+                  {% elif course.subject_area.name == 'ai_agents' %}🧠
+                  {% elif course.subject_area.name == 'devops' %}🔧
+                  {% elif course.subject_area.name == 'security' %}🔒
+                  {% else %}📚{% endif %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="course-card-body">
+              <div class="course-card-subject">{{ course.subject_area.display_name }}</div>
+              <div class="course-card-title">{{ course.title }}</div>
+              <div class="course-card-price">
+                {% if course.price == 0 %}
+                  <span class="free">{{ T.course_free }}</span>
+                {% else %}
+                  GHS {{ course.price }}
+                {% endif %}
+              </div>
+              <div class="course-card-lang">&#127760; {{ course.get_language_display }}</div>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted" style="text-align:center;padding:3rem 0;">No courses published yet. Check back soon!</p>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ── Browse by Subject ─────────────────────────────────────────────── -->
+<section class="section" style="background:var(--bg-alt);">
+  <div class="container">
+    <div class="section-header">
+      <h2>{{ T.section_subjects }}</h2>
+    </div>
+    <div class="subject-grid">
+      {% for area in subject_areas %}
+        <a href="{% url 'course_catalog' %}?subject={{ area.name }}" class="subject-card" style="text-decoration:none;">
+          <div class="icon">
+            {% if area.name == 'programming' %}💻
+            {% elif area.name == 'aws' %}☁️
+            {% elif area.name == 'system_design' %}🏗️
+            {% elif area.name == 'ml_ai' %}🤖
+            {% elif area.name == 'blockchain' %}⛓️
+            {% elif area.name == 'ai_agents' %}🧠
+            {% elif area.name == 'devops' %}🔧
+            {% elif area.name == 'security' %}🔒
+            {% else %}📚{% endif %}
+          </div>
+          <h4>{{ area.display_name }}</h4>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works ──────────────────────────────────────────────────── -->
+<section class="section" style="background:var(--bg);">
+  <div class="container">
+    <div class="section-header" style="text-align:center;">
+      <h2>{{ T.section_how }}</h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <h3>{{ T.how_1_title }}</h3>
+        <p>{{ T.how_1_desc }}</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <h3>{{ T.how_2_title }}</h3>
+        <p>{{ T.how_2_desc }}</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <h3>{{ T.how_3_title }}</h3>
+        <p>{{ T.how_3_desc }}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Language banner ──────────────────────────────────────────────── -->
+<div class="lang-banner">
+  <div class="container">
+    <h2>{{ T.section_lang }}</h2>
+    <p style="margin-top:.5rem;">{{ T.section_lang_sub }}</p>
+    <div class="lang-flags">
+      {% for code, name in LANGUAGES %}
+        <a href="{% url 'set_language' code %}" class="lang-flag-btn {% if code == LANG_CODE %}active{% endif %}">
+          {% if code == 'en' %}🇬🇧
+          {% elif code == 'ak' %}🇬🇭
+          {% elif code == 'ee' %}🇬🇭
+          {% elif code == 'ha' %}🇬🇭
+          {% elif code == 'gaa' %}🇬🇭
+          {% elif code == 'dag' %}🇬🇭
+          {% elif code == 'fat' %}🇬🇭
+          {% endif %}
+          {{ name }}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── CTA banner ────────────────────────────────────────────────────── -->
+{% if not user.is_authenticated %}
+<section style="background:var(--orange);padding:4rem 1.25rem;text-align:center;color:#fff;">
+  <div class="container">
+    <h2 style="color:#fff;margin-bottom:.75rem;">Ready to start your learning journey?</h2>
+    <p style="color:rgba(255,255,255,.85);margin-bottom:1.5rem;font-size:1.1rem;">Join thousands of learners across Africa. Your first course is free.</p>
+    <a href="{% url 'register' %}" class="btn btn-dark btn-lg">Get Started — It's Free</a>
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

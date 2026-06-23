@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ T.admin_students }}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar-logo">SPC Admin</div>
+    <a href="{% url 'admin_dashboard' %}" class="admin-nav-item"><span class="icon">📊</span> Dashboard</a>
+    <a href="{% url 'admin_courses' %}" class="admin-nav-item"><span class="icon">📚</span> {{ T.admin_courses }}</a>
+    <a href="{% url 'admin_students' %}" class="admin-nav-item active"><span class="icon">👥</span> {{ T.admin_students }}</a>
+    <a href="{% url 'admin_upload' %}" class="admin-nav-item"><span class="icon">⬆</span> {{ T.admin_upload }}</a>
+    <a href="/admin/" class="admin-nav-item"><span class="icon">⚙</span> Django Admin</a>
+  </aside>
+
+  <div class="admin-content">
+    <h1 style="margin-bottom:1.5rem;">{{ T.admin_students }}</h1>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Language</th>
+              <th>Enrolled In</th>
+              <th>Joined</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in students %}
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:.6rem;">
+                    <div style="width:32px;height:32px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;">
+                      {{ student.username|first|upper }}
+                    </div>
+                    <div>
+                      <strong>{{ student.username }}</strong>
+                      {% if student.first_name %}<br><span class="text-xs text-muted">{{ student.first_name }} {{ student.last_name }}</span>{% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td>{{ student.email|default:"—" }}</td>
+                <td>{{ student.get_language_preference_display }}</td>
+                <td>{{ student.enrollments.count }} course{{ student.enrollments.count|pluralize }}</td>
+                <td>{{ student.created_at|date:"M j, Y" }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted);">No students registered yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

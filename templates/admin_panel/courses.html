@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ T.admin_courses }}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar-logo">SPC Admin</div>
+    <a href="{% url 'admin_dashboard' %}" class="admin-nav-item"><span class="icon">📊</span> Dashboard</a>
+    <a href="{% url 'admin_courses' %}" class="admin-nav-item active"><span class="icon">📚</span> {{ T.admin_courses }}</a>
+    <a href="{% url 'admin_students' %}" class="admin-nav-item"><span class="icon">👥</span> {{ T.admin_students }}</a>
+    <a href="{% url 'admin_upload' %}" class="admin-nav-item"><span class="icon">⬆</span> {{ T.admin_upload }}</a>
+    <a href="/admin/" class="admin-nav-item"><span class="icon">⚙</span> Django Admin</a>
+  </aside>
+
+  <div class="admin-content">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:.75rem;">
+      <h1>{{ T.admin_courses }}</h1>
+      <a href="{% url 'admin_upload' %}" class="btn btn-primary">+ Generate from PDF</a>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Subject</th>
+              <th>Language</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for course in courses %}
+              <tr>
+                <td>
+                  <a href="{% url 'course_detail' course.pk %}" style="color:var(--orange);font-weight:600;">
+                    {{ course.title|truncatechars:45 }}
+                  </a>
+                </td>
+                <td>{{ course.subject_area.display_name }}</td>
+                <td>{{ course.get_language_display }}</td>
+                <td>{% if course.price == 0 %}Free{% else %}GHS {{ course.price }}{% endif %}</td>
+                <td>
+                  <span class="status {% if course.is_published %}status-published{% else %}status-unpublished{% endif %}">
+                    {% if course.is_published %}Published{% else %}Draft{% endif %}
+                  </span>
+                </td>
+                <td>{{ course.created_at|date:"M j, Y" }}</td>
+                <td>
+                  <div style="display:flex;gap:.4rem;">
+                    <a href="/admin/curriculum/course/{{ course.pk }}/change/" class="btn btn-ghost btn-sm">Edit</a>
+                    <form method="post" action="{% url 'admin_course_toggle' course.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm {% if course.is_published %}btn-ghost{% else %}btn-primary{% endif %}">
+                        {% if course.is_published %}{{ T.admin_unpublish }}{% else %}{{ T.admin_publish }}{% endif %}
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted);">
+                  No courses yet. <a href="{% url 'admin_upload' %}" style="color:var(--orange);">Upload a PDF</a> to generate one.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

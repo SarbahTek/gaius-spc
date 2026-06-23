@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ T.nav_dashboard }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:2rem;padding-bottom:3rem;">
+  <h1 style="margin-bottom:.25rem;">{{ T.dash_welcome }}, {{ user.first_name|default:user.username }} 👋</h1>
+  <p class="text-muted" style="margin-bottom:2rem;">{{ T.dash_continue }}</p>
+
+  {% if enrolled_data %}
+    <!-- Continue learning strip -->
+    <h2 style="margin-bottom:1rem;">{{ T.dash_continue }}</h2>
+    {% for item in enrolled_data %}
+      <div class="enrolled-card">
+        <div class="enrolled-thumb">
+          {% if item.course.thumbnail %}
+            <img src="{{ item.course.thumbnail.url }}" alt="{{ item.course.title }}">
+          {% else %}
+            <div class="no-thumb">📚</div>
+          {% endif %}
+        </div>
+        <div class="enrolled-info" style="flex:1;">
+          <h4>
+            <a href="{% url 'progress' item.course.pk %}" style="color:var(--text);">{{ item.course.title }}</a>
+          </h4>
+          <p class="text-xs text-muted">{{ item.course.subject_area.display_name }}</p>
+          <div class="progress-bar" style="margin-top:.6rem;margin-bottom:.3rem;">
+            <div class="progress-fill {% if item.pct == 100 %}green{% endif %}" style="width:{{ item.pct }}%;"></div>
+          </div>
+          <p class="pct">{{ item.mastered }}/{{ item.total }} concepts · {{ item.pct }}% {{ T.dash_pct_done }}</p>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-shrink:0;">
+          <a href="{% url 'progress' item.course.pk %}" class="btn btn-ghost btn-sm">Progress</a>
+          {% if item.course.weeks.first %}
+            {% with first_concept=item.course.weeks.first.concepts.first %}
+              {% if first_concept %}
+                <a href="{% url 'study' first_concept.pk %}" class="btn btn-primary btn-sm">Study</a>
+              {% endif %}
+            {% endwith %}
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+
+    <!-- Weak concepts panel -->
+    {% if weak_concepts %}
+      <div class="card" style="margin-top:2rem;">
+        <div class="card-body">
+          <h3 style="margin-bottom:1rem;">&#9888; {{ T.dash_weak }}</h3>
+          {% for mastery in weak_concepts %}
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--border);">
+              <div>
+                <strong style="font-size:.9rem;">{{ mastery.concept.title }}</strong>
+                <p class="text-xs text-muted">Week {{ mastery.concept.week.number }} · {{ mastery.concept.week.course.title }}</p>
+              </div>
+              <a href="{% url 'study' mastery.concept.pk %}" class="btn btn-danger btn-sm">Review</a>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+  {% else %}
+    <!-- Empty state -->
+    <div style="text-align:center;padding:5rem 0;">
+      <p style="font-size:4rem;margin-bottom:1rem;">🎓</p>
+      <h2 style="margin-bottom:.75rem;">{{ T.dash_no_courses }}</h2>
+      <p class="text-muted" style="margin-bottom:1.5rem;">Pick a course and start your learning journey today.</p>
+      <a href="{% url 'course_catalog' %}" class="btn btn-primary btn-lg">{{ T.dash_browse }}</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

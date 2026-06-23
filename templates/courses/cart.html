@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ T.cart_title }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:2rem;padding-bottom:3rem;">
+  <h1 style="margin-bottom:1.5rem;">{{ T.cart_title }}</h1>
+
+  {% if items %}
+    <div class="cart-layout">
+      <!-- Cart items -->
+      <div class="card" style="padding:0;">
+        {% for item in items %}
+          <div class="cart-item">
+            <div class="cart-item-thumb">
+              {% if item.course.thumbnail %}
+                <img src="{{ item.course.thumbnail.url }}" alt="{{ item.course.title }}">
+              {% else %}
+                <div class="no-thumb">📚</div>
+              {% endif %}
+            </div>
+            <div style="flex:1;">
+              <h4 style="margin-bottom:.25rem;">
+                <a href="{% url 'course_detail' item.course.pk %}" style="color:var(--text);">{{ item.course.title }}</a>
+              </h4>
+              <p class="text-xs text-muted">{{ item.course.subject_area.display_name }}</p>
+              <p class="text-sm" style="margin-top:.25rem;font-weight:700;color:var(--text);">
+                {% if item.course.price == 0 %}
+                  <span style="color:var(--orange);">{{ T.course_free }}</span>
+                {% else %}
+                  GHS {{ item.course.price }}
+                {% endif %}
+              </p>
+            </div>
+            <form method="post" action="{% url 'cart_remove' item.course.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost btn-sm">{{ T.cart_remove }}</button>
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Summary -->
+      <div class="cart-summary">
+        <h3>{{ T.checkout_summary }}</h3>
+        {% for item in items %}
+          <div style="display:flex;justify-content:space-between;font-size:.88rem;padding:.4rem 0;border-bottom:1px solid var(--border);">
+            <span>{{ item.course.title|truncatechars:32 }}</span>
+            <span>
+              {% if item.course.price == 0 %}Free{% else %}GHS {{ item.course.price }}{% endif %}
+            </span>
+          </div>
+        {% endfor %}
+        <div class="cart-total-row">
+          <span>{{ T.cart_total }}</span>
+          <span>GHS {{ cart.total }}</span>
+        </div>
+        <a href="{% url 'checkout' %}" class="btn btn-primary btn-block btn-lg" style="margin-top:1rem;">
+          {{ T.cart_checkout }}
+        </a>
+      </div>
+    </div>
+  {% else %}
+    <div style="text-align:center;padding:5rem 0;">
+      <p style="font-size:4rem;margin-bottom:1rem;">🛒</p>
+      <h2 style="margin-bottom:.5rem;">{{ T.cart_empty }}</h2>
+      <a href="{% url 'course_catalog' %}" class="btn btn-primary" style="margin-top:1.25rem;">{{ T.cart_browse }}</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

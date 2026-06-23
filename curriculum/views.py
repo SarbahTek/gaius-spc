@@ -4,9 +4,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from django.shortcuts import get_object_or_404
+
 from .models import (
     Course, Week, Concept, Question,
-    UserAttempt, ConceptMastery, DayProgress,
+    UserAttempt, ConceptMastery, DayProgress, ConceptLesson,
 )
 from .serializers import (
     CourseListSerializer, CourseDetailSerializer,
@@ -14,6 +16,7 @@ from .serializers import (
     QuestionSerializer, QuestionWithClueSerializer,
     SubmitAttemptSerializer, UserAttemptSerializer,
     ConceptMasterySerializer, DayProgressSerializer,
+    ConceptLessonSerializer,
 )
 from .services import EvaluationService, MasteryService, ClueService
 
@@ -280,3 +283,28 @@ class DayProgressView(APIView):
             "summary":    MasteryService.get_week_summary(user=request.user, week=week),
             "days":       DayProgressSerializer(progresses, many=True).data,
         })
+
+
+# ─────────────────────────────────────────────
+# CONCEPT LESSON (AI tutor text + audio)
+# ─────────────────────────────────────────────
+
+class ConceptLessonView(APIView):
+    """GET /api/curriculum/concepts/<concept_id>/lesson/"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, concept_id):
+        concept = get_object_or_404(Concept, pk=concept_id)
+        try:
+            lesson = concept.lesson
+        except ConceptLesson.DoesNotExist:
+            return Response({
+                "concept_id":    concept.id,
+                "concept_title": concept.title,
+                "tutor_script":  None,
+                "audio_url":     None,
+                "generated_at":  None,
+            })
+        return Response(
+            ConceptLessonSerializer(lesson, context={"request": request}).data
+        )

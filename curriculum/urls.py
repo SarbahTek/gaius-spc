@@ -22,4 +22,7 @@ urlpatterns = [
 
     # Progress
     path("progress/week/<int:week_id>/",            views.DayProgressView.as_view(),     name="day-progress"),
+
+    # AI Lesson (tutor script + audio)
+    path("concepts/<int:concept_id>/lesson/",       views.ConceptLessonView.as_view(),   name="concept-lesson"),
 ]

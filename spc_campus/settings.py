@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -41,6 +42,9 @@ INSTALLED_APPS = [
 
     'auth_manager',
     'curriculum',
+    'course_agent',
+    'payments',
+    'web',
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
@@ -77,11 +81,15 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:8080",
 ]
+CORS_ALLOW_CREDENTIALS = True
+
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 days
 
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -101,6 +109,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'web.context_processors.spc_globals',
             ],
         },
     },
@@ -154,4 +163,34 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL  = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+
+MEDIA_URL  = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ── Templates ──────────────────────────────────────────────────────────
+TEMPLATES[0]['DIRS'] = [BASE_DIR / 'templates']
+
+# ── Internationalisation ───────────────────────────────────────────────
+LANGUAGE_CODE = 'en'
+LANGUAGES = [
+    ('en',  'English'),
+    ('ak',  'Twi'),
+    ('ee',  'Ewe'),
+    ('ha',  'Hausa'),
+    ('gaa', 'Ga'),
+    ('dag', 'Dagbani'),
+    ('fat', 'Fante'),
+]
+LOCALE_PATHS = [BASE_DIR / 'locale']
+
+# ── Paystack ───────────────────────────────────────────────────────────
+PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY', '')
+PAYSTACK_PUBLIC_KEY = os.environ.get('PAYSTACK_PUBLIC_KEY', '')
+
+# ── AI API keys (set in environment) ──────────────────────────────────
+ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+OPENAI_API_KEY    = os.environ.get('OPENAI_API_KEY', '')

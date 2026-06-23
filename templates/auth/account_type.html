@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Choose Account Type — SPC Campus{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card" style="max-width:520px;">
+    <h1 style="margin-bottom:.4rem;">Welcome to SPC Campus</h1>
+    <p class="sub" style="margin-bottom:2rem;">How do you want to use the platform?</p>
+
+    <div class="account-type-cards">
+      <a href="{% url 'learner_dashboard' %}" class="account-type-card" style="text-decoration:none;color:inherit;">
+        <div class="icon">🎓</div>
+        <h3>Student</h3>
+        <p>Browse courses, study at your own pace, and track mastery progress.</p>
+      </a>
+      <a href="{% url 'learner_dashboard' %}" class="account-type-card" style="text-decoration:none;color:inherit;">
+        <div class="icon">🏫</div>
+        <h3>Instructor</h3>
+        <p>Create and manage courses. Requires admin approval to publish.</p>
+      </a>
+    </div>
+
+    <p class="auth-footer">
+      You can update this later in <a href="{% url 'settings' %}">Settings</a>.
+    </p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ T.nav_my_courses }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:2rem;padding-bottom:3rem;">
+  <h1 style="margin-bottom:1.5rem;">{{ T.nav_my_courses }}</h1>
+
+  {% if enrollments %}
+    <div class="course-grid">
+      {% for enr in enrollments %}
+        <a href="{% url 'progress' enr.course.pk %}" class="card course-card" style="text-decoration:none;">
+          <div class="course-card-thumb">
+            {% if enr.course.thumbnail %}
+              <img src="{{ enr.course.thumbnail.url }}" alt="{{ enr.course.title }}">
+            {% else %}
+              <div class="no-thumb">📚</div>
+            {% endif %}
+          </div>
+          <div class="course-card-body">
+            <div class="course-card-subject">{{ enr.course.subject_area.display_name }}</div>
+            <div class="course-card-title">{{ enr.course.title }}</div>
+            <div class="progress-bar" style="margin-top:.75rem;">
+              <div class="progress-fill" style="width:0%;"></div>
+            </div>
+            <p class="text-xs text-muted" style="margin-top:.3rem;">Enrolled {{ enr.enrolled_at|date:"M j, Y" }}</p>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="text-align:center;padding:5rem 0;">
+      <p style="font-size:4rem;margin-bottom:1rem;">📚</p>
+      <h2>{{ T.dash_no_courses }}</h2>
+      <a href="{% url 'course_catalog' %}" class="btn btn-primary" style="margin-top:1.25rem;">{{ T.dash_browse }}</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

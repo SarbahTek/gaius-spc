@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}{{ T.admin_dash_title }}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar-logo">SPC Admin</div>
+    <a href="{% url 'admin_dashboard' %}" class="admin-nav-item active">
+      <span class="icon">📊</span> Dashboard
+    </a>
+    <a href="{% url 'admin_courses' %}" class="admin-nav-item">
+      <span class="icon">📚</span> {{ T.admin_courses }}
+    </a>
+    <a href="{% url 'admin_students' %}" class="admin-nav-item">
+      <span class="icon">👥</span> {{ T.admin_students }}
+    </a>
+    <a href="{% url 'admin_upload' %}" class="admin-nav-item">
+      <span class="icon">⬆</span> {{ T.admin_upload }}
+    </a>
+    <a href="/admin/" class="admin-nav-item">
+      <span class="icon">⚙</span> Django Admin
+    </a>
+  </aside>
+
+  <!-- Main content -->
+  <div class="admin-content">
+    <h1 style="margin-bottom:1.5rem;">{{ T.admin_dash_title }}</h1>
+
+    <!-- Stat cards -->
+    <div class="admin-stats">
+      <div class="admin-stat-card">
+        <div class="stat-label">Total Courses</div>
+        <div class="stat-val">{{ stats.total_courses }}</div>
+        <div class="stat-icon">📚</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="stat-label">Published</div>
+        <div class="stat-val">{{ stats.published }}</div>
+        <div class="stat-icon">✅</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="stat-label">Students</div>
+        <div class="stat-val">{{ stats.total_students }}</div>
+        <div class="stat-icon">👥</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="stat-label">Enrollments</div>
+        <div class="stat-val">{{ stats.total_enrollments }}</div>
+        <div class="stat-icon">🎓</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="stat-label">{{ T.admin_revenue }}</div>
+        <div class="stat-val">GHS {{ stats.revenue }}</div>
+        <div class="stat-icon">💰</div>
+      </div>
+    </div>
+
+    <!-- Recent enrollments -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-body" style="padding:1.5rem;">
+        <h3 style="margin-bottom:1rem;">Recent Enrollments</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Student</th><th>Course</th><th>Date</th><th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for enr in recent_enrollments %}
+                <tr>
+                  <td>{{ enr.user.username }}</td>
+                  <td><a href="{% url 'course_detail' enr.course.pk %}" style="color:var(--orange);">{{ enr.course.title|truncatechars:40 }}</a></td>
+                  <td>{{ enr.enrolled_at|date:"M j, Y" }}</td>
+                  <td>{% if enr.amount_paid == 0 %}Free{% else %}GHS {{ enr.amount_paid }}{% endif %}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No enrollments yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Generation jobs -->
+    <div class="card">
+      <div class="card-body" style="padding:1.5rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3>Recent Course Generation Jobs</h3>
+          <a href="{% url 'admin_upload' %}" class="btn btn-primary btn-sm">+ New Upload</a>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>File</th><th>Status</th><th>Course</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+              {% for job in recent_jobs %}
+                <tr>
+                  <td>{{ job.original_filename|truncatechars:30 }}</td>
+                  <td><span class="status status-{{ job.status }}">{{ job.get_status_display }}</span></td>
+                  <td>
+                    {% if job.generated_course %}
+                      <a href="{% url 'course_detail' job.generated_course.pk %}" style="color:var(--orange);">
+                        {{ job.generated_course.title|truncatechars:30 }}
+                      </a>
+                    {% else %}—{% endif %}
+                  </td>
+                  <td>{{ job.created_at|date:"M j, Y H:i" }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No jobs yet. <a href="{% url 'admin_upload' %}" style="color:var(--orange);">Upload a PDF</a></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

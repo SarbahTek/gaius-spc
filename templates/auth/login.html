@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ T.login_title }}{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <h1>{{ T.login_title }}</h1>
+    <p class="sub">{{ T.login_sub }}</p>
+
+    <form method="post" action="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">{{ T.login_username }}</label>
+        <input class="form-control" type="text" name="username" required autocomplete="username" autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ T.login_password }}</label>
+        <input class="form-control" type="password" name="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:.5rem;">
+        {{ T.login_btn }}
+      </button>
+    </form>
+
+    <p class="auth-footer">
+      {{ T.login_no_account }}
+      <a href="{% url 'register' %}">{{ T.login_signup }}</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ T.register_title }}{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card" style="max-width:500px;">
+    <h1>{{ T.register_title }}</h1>
+    <p class="sub">{{ T.register_sub }}</p>
+
+    <form method="post" action="{% url 'register' %}">
+      {% csrf_token %}
+
+      <!-- Account type (inline) -->
+      <div class="form-group">
+        <label class="form-label">I am a...</label>
+        <div style="display:flex;gap:.75rem;">
+          <label style="flex:1;border:2px solid var(--border);border-radius:var(--radius);padding:.75rem;cursor:pointer;text-align:center;transition:all var(--transition);" id="lbl-student">
+            <input type="radio" name="role" value="student" class="account-type-radio" checked onchange="highlightRole()">
+            🎓 Student
+          </label>
+          <label style="flex:1;border:2px solid var(--border);border-radius:var(--radius);padding:.75rem;cursor:pointer;text-align:center;transition:all var(--transition);" id="lbl-instructor">
+            <input type="radio" name="role" value="instructor" class="account-type-radio" onchange="highlightRole()">
+            🏫 Instructor
+          </label>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">{{ T.register_username }}</label>
+          <input class="form-control" type="text" name="username" required autocomplete="username" autofocus>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ T.register_email }}</label>
+          <input class="form-control" type="email" name="email" required autocomplete="email">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">{{ T.register_pw1 }}</label>
+          <input class="form-control" type="password" name="password1" required autocomplete="new-password" minlength="8">
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ T.register_pw2 }}</label>
+          <input class="form-control" type="password" name="password2" required autocomplete="new-password">
+        </div>
+      </div>
+      <p class="form-hint">Minimum 8 characters.</p>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:1rem;">
+        {{ T.register_btn }}
+      </button>
+    </form>
+
+    <p class="auth-footer">
+      {{ T.register_have_account }}
+      <a href="{% url 'login' %}">{{ T.register_login }}</a>
+    </p>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+function highlightRole() {
+  const s = document.querySelector('[name=role]:checked').value;
+  document.getElementById('lbl-student').style.borderColor    = s === 'student'    ? 'var(--orange)' : 'var(--border)';
+  document.getElementById('lbl-instructor').style.borderColor = s === 'instructor' ? 'var(--orange)' : 'var(--border)';
+  document.getElementById('lbl-student').style.background    = s === 'student'    ? 'var(--orange-light)' : '';
+  document.getElementById('lbl-instructor').style.background = s === 'instructor' ? 'var(--orange-light)' : '';
+}
+highlightRole();
+</script>
+{% endblock %}
+{% endblock %}

@@ -4,6 +4,7 @@ from auth_manager.serializers import PublicUserSerializer
 from .models import (
     SubjectArea, Course, Week, Concept,
     Question, UserAttempt, ConceptMastery, DayProgress,
+    ConceptLesson,
 )
 
 
@@ -137,3 +138,22 @@ class DayProgressSerializer(serializers.ModelSerializer):
         model        = DayProgress
         fields       = ("id", "day_number", "status", "unlocked_at", "passed_at")
         read_only_fields = fields
+
+
+# ─────────────────────────────────────────────
+# LESSON (AI-generated tutor content)
+# ─────────────────────────────────────────────
+
+class ConceptLessonSerializer(serializers.ModelSerializer):
+    audio_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = ConceptLesson
+        fields = ("concept", "tutor_script", "audio_url", "generated_at")
+        read_only_fields = fields
+
+    def get_audio_url(self, obj):
+        request = self.context.get('request')
+        if obj.audio_file and request:
+            return request.build_absolute_uri(obj.audio_file.url)
+        return None

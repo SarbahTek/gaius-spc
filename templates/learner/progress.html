@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ T.progress_title }} — {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:2rem;padding-bottom:3rem;">
+  <p class="text-muted text-sm" style="margin-bottom:.5rem;">
+    <a href="{% url 'my_courses' %}" style="color:var(--orange);">My Courses</a> &rsaquo; {{ course.title }}
+  </p>
+  <h1 style="margin-bottom:2rem;">{{ T.progress_title }}</h1>
+
+  {% for wd in weeks_data %}
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-body" style="padding:1.5rem;">
+        <h3 style="margin-bottom:1rem;">
+          Week {{ wd.week.number }}: {{ wd.week.title }}
+          {% if wd.week.summary %}<span class="text-muted text-sm fw-bold" style="font-weight:400;">— {{ wd.week.summary }}</span>{% endif %}
+        </h3>
+        <div style="display:flex;flex-direction:column;gap:.6rem;">
+          {% for cd in wd.concepts %}
+            <div style="display:flex;align-items:center;gap:1rem;padding:.65rem 1rem;background:var(--bg-alt);border-radius:var(--radius);">
+              <div>
+                {% if cd.mastery.status == 'mastered' %}
+                  <span style="color:#16a34a;font-size:1.2rem;">✓</span>
+                {% elif cd.mastery.status == 'weak' %}
+                  <span style="color:#ef4444;font-size:1.2rem;">⚠</span>
+                {% elif cd.mastery.status == 'in_progress' %}
+                  <span style="color:var(--orange);font-size:1.2rem;">◎</span>
+                {% else %}
+                  <span style="color:var(--gray-300);font-size:1.2rem;">○</span>
+                {% endif %}
+              </div>
+              <div style="flex:1;">
+                <strong style="font-size:.9rem;">{{ cd.concept.title }}</strong>
+                <p class="text-xs text-muted">Day {{ cd.concept.day_introduced }}</p>
+              </div>
+              {% if cd.mastery %}
+                <div style="text-align:right;">
+                  <span class="badge {% if cd.mastery.status == 'mastered' %}badge-easy{% elif cd.mastery.status == 'weak' %}badge-hard{% else %}badge-medium{% endif %}">
+                    {{ cd.mastery.get_status_display }}
+                  </span>
+                  {% if cd.mastery.best_score > 0 %}
+                    <p class="text-xs text-muted" style="margin-top:.2rem;">Best: {{ cd.mastery.best_score|floatformat:0 }}%</p>
+                  {% endif %}
+                </div>
+              {% else %}
+                <span class="badge" style="background:var(--bg);color:var(--text-muted);">{{ T.progress_not_started }}</span>
+              {% endif %}
+              <a href="{% url 'study' cd.concept.pk %}" class="btn btn-ghost btn-sm">Study</a>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <p class="text-muted">No content found for this course.</p>
+  {% endfor %}
+</div>
+{% endblock %}

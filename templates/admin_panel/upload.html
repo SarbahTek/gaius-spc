@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}{{ T.admin_upload }}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar-logo">SPC Admin</div>
+    <a href="{% url 'admin_dashboard' %}" class="admin-nav-item"><span class="icon">📊</span> Dashboard</a>
+    <a href="{% url 'admin_courses' %}" class="admin-nav-item"><span class="icon">📚</span> {{ T.admin_courses }}</a>
+    <a href="{% url 'admin_students' %}" class="admin-nav-item"><span class="icon">👥</span> {{ T.admin_students }}</a>
+    <a href="{% url 'admin_upload' %}" class="admin-nav-item active"><span class="icon">⬆</span> {{ T.admin_upload }}</a>
+    <a href="/admin/" class="admin-nav-item"><span class="icon">⚙</span> Django Admin</a>
+  </aside>
+
+  <div class="admin-content">
+    <h1 style="margin-bottom:.5rem;">{{ T.admin_upload }}</h1>
+    <p class="text-muted" style="margin-bottom:2rem;">Upload a PDF and our AI agent will generate a complete course — weeks, concepts, tutor scripts, audio, and questions.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start;">
+
+      <!-- Upload form -->
+      <div class="card">
+        <div class="card-body" style="padding:2rem;">
+          <h2 style="margin-bottom:1.5rem;">Upload Learning Material</h2>
+          <form method="post" action="/api/admin/courses/generate/"
+                enctype="multipart/form-data" id="upload-form">
+            {% csrf_token %}
+
+            <div class="form-group">
+              <label class="form-label">Subject Area</label>
+              <select name="subject_area_id" class="form-control">
+                <option value="">— No subject area —</option>
+                {% for area in subject_areas %}
+                  <option value="{{ area.pk }}">{{ area.display_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">PDF File</label>
+              <div class="upload-area" id="drop-zone" onclick="document.getElementById('pdf-input').click()">
+                <div class="icon">📄</div>
+                <p><strong>Click to select</strong> or drag & drop your PDF here</p>
+                <p style="font-size:.8rem;margin-top:.5rem;">PDF only · Max 50MB</p>
+                <input type="file" name="pdf" id="pdf-input" accept=".pdf" onchange="fileSelected(this)">
+              </div>
+              <p id="file-name" class="form-hint" style="display:none;"></p>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="submit-btn">
+              &#129302; Generate Course with AI
+            </button>
+          </form>
+          <div id="upload-status" class="hidden" style="margin-top:1rem;"></div>
+        </div>
+      </div>
+
+      <!-- Info panel -->
+      <div>
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-body">
+            <h3 style="margin-bottom:.75rem;">What happens?</h3>
+            <ol style="counter-reset:steps;padding:0;list-style:none;">
+              {% for step in "1234"|make_list %}
+                <li style="display:flex;gap:.75rem;margin-bottom:.75rem;font-size:.88rem;">
+                  <span style="width:24px;height:24px;border-radius:50%;background:var(--orange);color:#fff;font-weight:700;font-size:.75rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">{{ step }}</span>
+                  {% if step == "1" %}PDF text is extracted automatically
+                  {% elif step == "2" %}Claude AI structures it into weeks, concepts, and questions
+                  {% elif step == "3" %}Each concept gets a tutor script (and audio if OpenAI is configured)
+                  {% elif step == "4" %}Review the draft course and publish when ready{% endif %}
+                </li>
+              {% endfor %}
+            </ol>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-body">
+            <h3 style="margin-bottom:.75rem;">⚙ API Keys Needed</h3>
+            <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem;">Make sure these are set in your environment:</p>
+            <code style="display:block;background:var(--bg-alt);padding:.65rem;border-radius:var(--radius);font-size:.8rem;margin-bottom:.4rem;">ANTHROPIC_API_KEY</code>
+            <code style="display:block;background:var(--bg-alt);padding:.65rem;border-radius:var(--radius);font-size:.8rem;">OPENAI_API_KEY <span style="color:var(--text-muted)">(optional, for audio)</span></code>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Job history -->
+    {% if jobs %}
+      <h2 style="margin-top:2.5rem;margin-bottom:1rem;">Generation History</h2>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>File</th><th>Status</th><th>Course Generated</th><th>Started</th><th>Finished</th></tr>
+            </thead>
+            <tbody>
+              {% for job in jobs %}
+                <tr id="job-row-{{ job.pk }}">
+                  <td>{{ job.original_filename|truncatechars:35 }}</td>
+                  <td>
+                    <span class="status status-{{ job.status }}" id="job-status-{{ job.pk }}">
+                      {{ job.get_status_display }}
+                    </span>
+                    {% if job.status == 'processing' %}
+                      <span class="spinner" style="margin-left:.5rem;"></span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if job.generated_course %}
+                      <a href="{% url 'course_detail' job.generated_course.pk %}" style="color:var(--orange);">
+                        {{ job.generated_course.title|truncatechars:35 }}
+                      </a>
+                    {% elif job.status == 'failed' %}
+                      <span style="color:#ef4444;font-size:.8rem;" title="{{ job.error_message }}">Failed — hover for details</span>
+                    {% else %}—{% endif %}
+                  </td>
+                  <td>{{ job.created_at|date:"M j H:i" }}</td>
+                  <td>{{ job.completed_at|date:"M j H:i"|default:"—" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+function fileSelected(input) {
+  const fn = document.getElementById('file-name');
+  fn.style.display = 'block';
+  fn.textContent = 'Selected: ' + input.files[0].name;
+  document.getElementById('drop-zone').style.borderColor = 'var(--orange)';
+}
+
+// Drag and drop
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragging'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragging'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('dragging');
+  const fi = document.getElementById('pdf-input');
+  fi.files = e.dataTransfer.files;
+  fileSelected(fi);
+});
+
+// Submit via API and poll status
+document.getElementById('upload-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  const statusEl = document.getElementById('upload-status');
+  const formData = new FormData(e.target);
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Uploading…';
+  statusEl.classList.remove('hidden');
+  statusEl.innerHTML = '<div class="message message-info">Uploading PDF and starting AI generation…</div>';
+
+  try {
+    const res  = await fetch('/api/admin/courses/generate/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}',
+                 'Authorization': 'Bearer ' + (localStorage.getItem('access') || '') },
+      body: formData,
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      statusEl.innerHTML = `<div class="message message-success">Generation started! Job #${data.job_id}. Polling status…</div>`;
+      pollJob(data.job_id);
+    } else {
+      statusEl.innerHTML = `<div class="message message-error">${data.error || 'Upload failed.'}</div>`;
+      btn.disabled = false; btn.innerHTML = '&#129302; Generate Course with AI';
+    }
+  } catch (err) {
+    statusEl.innerHTML = '<div class="message message-error">Network error. Please try again.</div>';
+    btn.disabled = false; btn.innerHTML = '&#129302; Generate Course with AI';
+  }
+});
+
+async function pollJob(jobId) {
+  const statusEl = document.getElementById('upload-status');
+  const interval = setInterval(async () => {
+    try {
+      const res  = await fetch(`/api/admin/generation-jobs/${jobId}/`, {
+        headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('access') || '') }
+      });
+      const data = await res.json();
+      if (data.status === 'completed') {
+        clearInterval(interval);
+        statusEl.innerHTML = `<div class="message message-success">✅ Course generated: <strong>${data.course_title}</strong>. <a href="{% url 'admin_courses' %}" style="color:var(--orange);">Review & publish</a></div>`;
+        document.getElementById('submit-btn').disabled = false;
+        document.getElementById('submit-btn').innerHTML = '&#129302; Generate Course with AI';
+        setTimeout(() => location.reload(), 3000);
+      } else if (data.status === 'failed') {
+        clearInterval(interval);
+        statusEl.innerHTML = `<div class="message message-error">Generation failed: ${data.error_message}</div>`;
+        document.getElementById('submit-btn').disabled = false;
+        document.getElementById('submit-btn').innerHTML = '&#129302; Generate Course with AI';
+      } else {
+        statusEl.innerHTML = `<div class="message message-info"><span class="spinner"></span> Processing… (${data.status})</div>`;
+      }
+    } catch (err) { clearInterval(interval); }
+  }, 4000);
+}
+</script>
+{% endblock %}
+{% endblock %}

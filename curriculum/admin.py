@@ -6,6 +6,7 @@ from .models import (
     SubjectArea, Course, Week, Concept,
     Question, UserAttempt, ConceptMastery,
     DayProgress, ScheduledTest, Project, BuildLog,
+    ConceptLesson,
 )
 
 
@@ -83,3 +84,14 @@ class ProjectAdmin(admin.ModelAdmin):
     list_display    = ("user", "week", "title", "status", "total_score", "submission_count")
     list_filter     = ("status",)
     readonly_fields = ("submitted_at", "evaluated_at", "created_at")
+
+
+@admin.register(ConceptLesson)
+class ConceptLessonAdmin(admin.ModelAdmin):
+    list_display    = ("concept", "has_audio", "generated_at")
+    search_fields   = ("concept__title",)
+    readonly_fields = ("generated_at",)
+
+    @admin.display(boolean=True, description="Audio ready")
+    def has_audio(self, obj):
+        return bool(obj.audio_file)

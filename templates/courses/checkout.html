@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ T.checkout_title }}{% endblock %}
+
+{% block content %}
+<div class="container section-sm" style="max-width:860px;">
+  <h1 style="margin-bottom:1.5rem;">{{ T.checkout_title }}</h1>
+
+  <div class="cart-layout">
+    <!-- Payment form -->
+    <div class="card">
+      <div class="card-body">
+        <h3 style="margin-bottom:1.25rem;">Payment Details</h3>
+        <div style="background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1.25rem;font-size:.9rem;">
+          <p>&#128274; Secured by <strong>Paystack</strong>. Your card details are never stored on our servers.</p>
+        </div>
+
+        <form method="post" action="{% url 'checkout_initiate' %}">
+          {% csrf_token %}
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-control" type="email" value="{{ user.email }}" disabled>
+            <p class="form-hint">Receipt will be sent here.</p>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:1rem;">
+            &#128274; {{ T.checkout_pay }} — GHS {{ total }}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Order summary -->
+    <div class="cart-summary">
+      <h3>{{ T.checkout_summary }}</h3>
+      {% for item in items %}
+        <div style="display:flex;justify-content:space-between;font-size:.88rem;padding:.5rem 0;border-bottom:1px solid var(--border);">
+          <div>
+            <strong>{{ item.course.title|truncatechars:28 }}</strong><br>
+            <span style="font-size:.75rem;color:var(--text-muted);">{{ item.course.subject_area.display_name }}</span>
+          </div>
+          <span style="white-space:nowrap;padding-left:.5rem;">
+            {% if item.course.price == 0 %}Free{% else %}GHS {{ item.course.price }}{% endif %}
+          </span>
+        </div>
+      {% endfor %}
+      <div class="cart-total-row">
+        <span>{{ T.cart_total }}</span>
+        <span>GHS {{ total }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

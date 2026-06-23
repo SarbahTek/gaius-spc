@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}{{ T.settings_title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="settings-layout">
+
+    <!-- Settings nav -->
+    <nav class="settings-nav">
+      <a href="?tab=profile"     class="settings-nav-item {% if active_tab == 'profile' %}active{% endif %}">👤 {{ T.settings_profile }}</a>
+      <a href="?tab=language"    class="settings-nav-item {% if active_tab == 'language' %}active{% endif %}">🌍 {{ T.settings_language }}</a>
+      <a href="?tab=appearance"  class="settings-nav-item {% if active_tab == 'appearance' %}active{% endif %}">🎨 {{ T.settings_appearance }}</a>
+      <a href="?tab=password"    class="settings-nav-item {% if active_tab == 'password' %}active{% endif %}">🔒 {{ T.settings_password }}</a>
+      <a href="?tab=payments"    class="settings-nav-item {% if active_tab == 'payments' %}active{% endif %}">💳 {{ T.settings_payments }}</a>
+    </nav>
+
+    <!-- Panel -->
+    <div class="settings-panel">
+
+      {% if active_tab == 'profile' %}
+        <h2>{{ T.settings_profile }}</h2>
+        <p class="sub">Manage your public information.</p>
+        <form method="post" action="{% url 'settings_profile' %}">
+          {% csrf_token %}
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">First Name</label>
+              <input class="form-control" type="text" name="first_name" value="{{ user.first_name }}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last Name</label>
+              <input class="form-control" type="text" name="last_name" value="{{ user.last_name }}">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Username</label>
+            <input class="form-control" type="text" value="{{ user.username }}" disabled>
+            <p class="form-hint">Username cannot be changed.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-control" type="email" value="{{ user.email }}" disabled>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bio</label>
+            <textarea class="form-control" name="bio" rows="3" placeholder="Tell us about yourself…">{{ user.bio }}</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Avatar URL</label>
+            <input class="form-control" type="url" name="avatar" value="{{ user.avatar }}" placeholder="https://...">
+            <p class="form-hint">Link to your profile picture.</p>
+          </div>
+          <button type="submit" class="btn btn-primary">{{ T.settings_save }}</button>
+        </form>
+
+      {% elif active_tab == 'language' %}
+        <h2>{{ T.settings_language }}</h2>
+        <p class="sub">Choose the language you want to see the platform in.</p>
+        <div class="lang-grid">
+          {% for code, name in LANGUAGES %}
+            <a href="{% url 'set_language' code %}" class="lang-card {% if code == LANG_CODE %}selected{% endif %}">
+              <div class="flag">
+                {% if code == 'en' %}🇬🇧
+                {% else %}🇬🇭{% endif %}
+              </div>
+              <span>{{ name }}</span>
+              {% if code == LANG_CODE %}<small style="color:var(--orange);">✓ Active</small>{% endif %}
+            </a>
+          {% endfor %}
+        </div>
+        <p class="text-muted text-sm" style="margin-top:1.5rem;">
+          Course content language is set when a course is created. The language setting above changes the platform interface only.
+        </p>
+
+      {% elif active_tab == 'appearance' %}
+        <h2>{{ T.settings_appearance }}</h2>
+        <p class="sub">Customise how SPC Campus looks for you.</p>
+        <div class="theme-toggle-row" style="margin-top:1.5rem;">
+          <button class="theme-btn" id="light-btn" onclick="setTheme('light')">
+            <span class="icon">☀️</span>
+            <span>{{ T.theme_light }}</span>
+          </button>
+          <button class="theme-btn" id="dark-btn" onclick="setTheme('dark')">
+            <span class="icon">🌙</span>
+            <span>{{ T.theme_dark }}</span>
+          </button>
+        </div>
+        <p class="form-hint" style="margin-top:1rem;">Your preference is saved in your browser.</p>
+
+      {% elif active_tab == 'password' %}
+        <h2>{{ T.settings_password }}</h2>
+        <p class="sub">Change your account password.</p>
+        <form method="post" action="{% url 'settings_password' %}" style="max-width:400px;">
+          {% csrf_token %}
+          <div class="form-group">
+            <label class="form-label">Current Password</label>
+            <input class="form-control" type="password" name="old_password" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input class="form-control" type="password" name="new_password1" required minlength="8">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm New Password</label>
+            <input class="form-control" type="password" name="new_password2" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Change Password</button>
+        </form>
+
+      {% elif active_tab == 'payments' %}
+        <h2>{{ T.settings_payments }}</h2>
+        <p class="sub">Your payment and enrollment history.</p>
+        {% if payment_history %}
+          <div class="table-wrap" style="margin-top:1.5rem;">
+            <table>
+              <thead>
+                <tr><th>Reference</th><th>Amount</th><th>Status</th><th>Date</th></tr>
+              </thead>
+              <tbody>
+                {% for payment in payment_history %}
+                  <tr>
+                    <td><code>{{ payment.reference }}</code></td>
+                    <td>GHS {{ payment.amount }}</td>
+                    <td><span class="status status-{{ payment.status }}">{{ payment.get_status_display }}</span></td>
+                    <td>{{ payment.created_at|date:"M j, Y" }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div style="text-align:center;padding:3rem 0;">
+            <p style="font-size:3rem;margin-bottom:1rem;">💳</p>
+            <p class="text-muted">No payment history yet.</p>
+            <a href="{% url 'course_catalog' %}" class="btn btn-primary" style="margin-top:1rem;">Browse Courses</a>
+          </div>
+        {% endif %}
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Highlight active theme button on load
+const current = localStorage.getItem('spc-theme') || 'light';
+document.getElementById(current + '-btn')?.classList.add('selected');
+
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('spc-theme', t);
+  document.getElementById('light-btn').classList.toggle('selected', t === 'light');
+  document.getElementById('dark-btn').classList.toggle('selected', t === 'dark');
+}
+</script>
+{% endblock %}

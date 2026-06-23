@@ -38,12 +38,33 @@ class SubjectArea(models.Model):
 
 
 class Course(models.Model):
-    title        = models.CharField(max_length=200)
-    subject_area = models.ForeignKey(SubjectArea, on_delete=models.PROTECT, related_name="courses")
-    description  = models.TextField()
-    is_published = models.BooleanField(default=False)
-    created_at   = models.DateTimeField(auto_now_add=True)
-    updated_at   = models.DateTimeField(auto_now=True)
+    LANG_EN  = 'en'
+    LANG_TW  = 'ak'
+    LANG_EWE = 'ee'
+    LANG_HA  = 'ha'
+    LANG_GA  = 'gaa'
+    LANG_DAG = 'dag'
+    LANG_FAT = 'fat'
+
+    LANGUAGE_CHOICES = [
+        (LANG_EN,  'English'),
+        (LANG_TW,  'Twi'),
+        (LANG_EWE, 'Ewe'),
+        (LANG_HA,  'Hausa'),
+        (LANG_GA,  'Ga'),
+        (LANG_DAG, 'Dagbani'),
+        (LANG_FAT, 'Fante'),
+    ]
+
+    title         = models.CharField(max_length=200)
+    subject_area  = models.ForeignKey(SubjectArea, on_delete=models.PROTECT, related_name="courses")
+    description   = models.TextField()
+    thumbnail     = models.ImageField(upload_to='course_thumbnails/', blank=True, null=True)
+    price         = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
+    language      = models.CharField(max_length=10, choices=LANGUAGE_CHOICES, default=LANG_EN)
+    is_published  = models.BooleanField(default=False)
+    created_at    = models.DateTimeField(auto_now_add=True)
+    updated_at    = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["title"]
@@ -418,6 +439,24 @@ class Project(models.Model):
     @property
     def can_resubmit(self):
         return self.submission_count < 2 and self.status == self.STATUS_REVISION_NEEDED
+
+
+# ─────────────────────────────────────────────
+# AI-GENERATED LESSON CONTENT
+# ─────────────────────────────────────────────
+
+class ConceptLesson(models.Model):
+    """
+    Tutor-style explanation + optional TTS audio for a Concept.
+    Created by CourseGenerationAgent; read by learners as text and/or audio.
+    """
+    concept      = models.OneToOneField(Concept, on_delete=models.CASCADE, related_name="lesson")
+    tutor_script = models.TextField()
+    audio_file   = models.FileField(upload_to="concept_audio/", blank=True)
+    generated_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Lesson — {self.concept.title}"
 
 
 class BuildLog(models.Model):

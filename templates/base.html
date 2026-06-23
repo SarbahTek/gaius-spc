@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="{{ LANG_CODE }}" data-theme="light">
+{% load static %}
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="{% block meta_desc %}SPC Campus — Revolutionising African Education through AI-powered adaptive learning.{% endblock %}">
+  <title>{% block title %}SPC Campus{% endblock %} | SPC Campus</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/spc.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+<!-- ── Navbar ──────────────────────────────────────────────────────── -->
+<nav class="navbar" role="navigation">
+  <div class="navbar-inner">
+
+    <a href="{% url 'landing' %}" class="navbar-brand">SPC<span>Campus</span></a>
+
+    <!-- Search -->
+    <form class="navbar-search" action="{% url 'course_catalog' %}" method="get">
+      <input type="text" name="q" placeholder="{{ T.nav_search }}" value="{{ request.GET.q|default:'' }}">
+      <button type="submit">&#128269;</button>
+    </form>
+
+    <!-- Nav links -->
+    <div class="navbar-links">
+      <a href="{% url 'course_catalog' %}">{{ T.nav_courses }}</a>
+
+      {% if user.is_authenticated %}
+        <!-- Cart -->
+        <a href="{% url 'cart' %}" class="cart-badge" title="Cart">
+          &#128722;
+          {% if CART_COUNT %}<span class="badge">{{ CART_COUNT }}</span>{% endif %}
+        </a>
+
+        <!-- User dropdown -->
+        <div class="dropdown">
+          <button class="navbar-links" onclick="toggleDropdown('user-menu')" style="display:flex;align-items:center;gap:.4rem;">
+            <span style="width:32px;height:32px;border-radius:50%;background:var(--orange);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;">
+              {{ user.username|first|upper }}
+            </span>
+            &#9660;
+          </button>
+          <div class="dropdown-menu" id="user-menu">
+            {% if user.role == 'admin' %}
+              <a href="{% url 'admin_dashboard' %}">&#128187; {{ T.nav_dashboard }}</a>
+              <a href="{% url 'admin_courses' %}">&#128218; {{ T.admin_courses }}</a>
+              <a href="{% url 'admin_students' %}">&#128100; {{ T.admin_students }}</a>
+              <a href="{% url 'admin_upload' %}">&#11014; {{ T.admin_upload }}</a>
+            {% else %}
+              <a href="{% url 'learner_dashboard' %}">&#127968; {{ T.nav_dashboard }}</a>
+              <a href="{% url 'my_courses' %}">&#127891; {{ T.nav_my_courses }}</a>
+            {% endif %}
+            <div class="dropdown-divider"></div>
+            <a href="{% url 'settings' %}">&#9881; {{ T.nav_settings }}</a>
+            <div class="dropdown-divider"></div>
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit">&#128682; {{ T.nav_logout }}</button>
+            </form>
+          </div>
+        </div>
+
+      {% else %}
+        <a href="{% url 'login' %}" class="btn-outline">{{ T.nav_login }}</a>
+        <a href="{% url 'register' %}" class="btn-primary">{{ T.nav_signup }}</a>
+      {% endif %}
+
+      <!-- Language switcher -->
+      <div class="dropdown">
+        <button class="navbar-links" onclick="toggleDropdown('lang-menu')" style="display:flex;align-items:center;gap:.3rem;">
+          &#127758; {{ LANG_LABEL }} &#9660;
+        </button>
+        <div class="dropdown-menu" id="lang-menu">
+          {% for code, name in LANGUAGES %}
+            <a href="{% url 'set_language' code %}">
+              {% if code == LANG_CODE %}✓ {% endif %}{{ name }}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Theme toggle -->
+      <button class="navbar-links" onclick="toggleTheme()" title="Toggle theme" id="theme-btn">&#9728;</button>
+    </div>
+
+  </div>
+</nav>
+
+<!-- ── Flash messages ───────────────────────────────────────────────── -->
+{% if messages %}
+  <div style="max-width:1200px;margin:.75rem auto;padding:0 1.25rem;">
+    <ul class="messages-list">
+      {% for msg in messages %}
+        <li class="message message-{{ msg.tags }}">{{ msg }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+<!-- ── Page content ─────────────────────────────────────────────────── -->
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ── Footer ───────────────────────────────────────────────────────── -->
+{% block footer %}
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">SPC<span>Campus</span></div>
+      <p style="font-size:.85rem;color:var(--footer-text);margin-top:.5rem;line-height:1.6;">
+        {{ T.footer_tagline }}.<br>Built for Africa, by Africa.
+      </p>
+    </div>
+    <div class="footer-col">
+      <h4>Learn</h4>
+      <a href="{% url 'course_catalog' %}">All Courses</a>
+      <a href="{% url 'course_catalog' %}?price=free">Free Courses</a>
+      {% for area in subject_areas_footer %}
+        <a href="{% url 'course_catalog' %}?subject={{ area.name }}">{{ area.display_name }}</a>
+      {% endfor %}
+    </div>
+    <div class="footer-col">
+      <h4>Languages</h4>
+      {% for code, name in LANGUAGES %}
+        <a href="{% url 'set_language' code %}">{{ name }}</a>
+      {% endfor %}
+    </div>
+    <div class="footer-col">
+      <h4>Account</h4>
+      {% if user.is_authenticated %}
+        <a href="{% url 'settings' %}">Settings</a>
+        <a href="{% url 'my_courses' %}">My Learning</a>
+      {% else %}
+        <a href="{% url 'login' %}">Log In</a>
+        <a href="{% url 'register' %}">Sign Up</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; {% now "Y" %} SPC Campus. {{ T.footer_rights }}.</p>
+  </div>
+</footer>
+{% endblock %}
+
+<!-- ── Toast container ──────────────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<script src="{% static 'js/spc.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

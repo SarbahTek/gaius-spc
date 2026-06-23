@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}{{ concept.title }}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="study-layout">
+
+  <!-- Sidebar: concept nav -->
+  <aside class="study-sidebar">
+    <div class="study-sidebar-title">{{ course.title }}</div>
+    {% regroup week_concepts by day_introduced as days %}
+    {% for day in days %}
+      <div style="padding:.5rem 1.25rem .2rem;font-size:.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;">
+        {{ T.course_day }} {{ day.grouper }}
+      </div>
+      {% for c in day.list %}
+        {% with status="not_started" %}
+        <a href="{% url 'study' c.pk %}" class="study-nav-item {% if c.pk == concept.pk %}active{% endif %}">
+          <span class="nav-dot {% if c.pk == concept.pk %}in_progress{% endif %}"></span>
+          {{ c.title }}
+        </a>
+        {% endwith %}
+      {% endfor %}
+    {% endfor %}
+  </aside>
+
+  <!-- Main study area -->
+  <div class="study-main">
+    <p class="study-meta">
+      <a href="{% url 'progress' course.pk %}" style="color:var(--orange);">{{ course.title }}</a>
+      &rsaquo; Week {{ concept.week.number }} &rsaquo; Day {{ concept.day_introduced }}
+    </p>
+    <h1 style="margin-bottom:1rem;">{{ concept.title }}</h1>
+    <p style="margin-bottom:1.5rem;">{{ concept.description }}</p>
+
+    <!-- AI Lesson -->
+    {% if lesson %}
+      <h2 style="margin-bottom:.75rem;">{{ T.study_lesson }}</h2>
+
+      {% if lesson.audio_file %}
+        <div class="audio-player">
+          <button class="play-btn" id="play-btn" onclick="toggleAudio()">&#9654;</button>
+          <audio id="lesson-audio" src="{{ lesson.audio_file.url }}" preload="metadata"></audio>
+          <div class="audio-info">
+            <span>{{ T.study_audio }}</span>
+            <div class="audio-progress" onclick="seekAudio(event)" id="audio-bar">
+              <div class="audio-progress-fill" id="audio-fill"></div>
+            </div>
+          </div>
+          <span id="audio-time" style="font-size:.8rem;color:var(--text-muted);white-space:nowrap;"></span>
+        </div>
+      {% endif %}
+
+      <div class="tutor-script">
+        {{ lesson.tutor_script|linebreaksbr }}
+      </div>
+    {% endif %}
+
+    <!-- Questions -->
+    <h2 style="margin-top:2.5rem;margin-bottom:1rem;">{{ T.study_questions }}</h2>
+
+    {% for q in questions %}
+      <div class="question-card" id="q-{{ q.pk }}">
+        <div class="q-meta">
+          <span class="badge badge-type">{{ q.get_question_type_display }}</span>
+          {% if q.difficulty == 1 %}<span class="badge badge-easy">Easy</span>
+          {% elif q.difficulty == 2 %}<span class="badge badge-medium">Medium</span>
+          {% else %}<span class="badge badge-hard">Hard</span>{% endif %}
+        </div>
+
+        <p style="font-weight:600;margin-bottom:1rem;">{{ q.content.prompt }}</p>
+
+        {% if q.question_type == 'mcq' %}
+          <form onsubmit="submitMCQ(event, {{ q.pk }})">
+            <div class="mcq-options" id="opts-{{ q.pk }}">
+              {% for opt in q.content.options %}
+                <label class="mcq-option" id="opt-{{ q.pk }}-{{ forloop.counter0 }}">
+                  <input type="radio" name="q{{ q.pk }}" value="{{ forloop.counter0 }}">
+                  {{ opt }}
+                </label>
+              {% endfor %}
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">{{ T.study_submit }}</button>
+          </form>
+          <div id="feedback-{{ q.pk }}" class="hidden" style="margin-top:1rem;"></div>
+
+        {% else %}
+          <!-- Practical question -->
+          {% if q.content.starter_code %}
+            <p class="text-xs text-muted" style="margin-bottom:.5rem;">Starter code:</p>
+            <pre style="background:#1e1e1e;color:#d4d4d4;padding:1rem;border-radius:var(--radius);font-size:.85rem;overflow-x:auto;margin-bottom:.75rem;">{{ q.content.starter_code }}</pre>
+          {% endif %}
+          <form onsubmit="submitPractical(event, {{ q.pk }})">
+            <textarea class="code-area" name="code" rows="8" placeholder="Write your answer here..."></textarea>
+            <button type="submit" class="btn btn-primary btn-sm" style="margin-top:.75rem;">{{ T.study_submit }}</button>
+          </form>
+          <div id="feedback-{{ q.pk }}" class="hidden" style="margin-top:1rem;"></div>
+        {% endif %}
+
+        <!-- Clue (shown after failure) -->
+        <div id="clue-{{ q.pk }}" class="clue-box hidden">
+          <div class="clue-label">Hint</div>
+          <p id="clue-text-{{ q.pk }}"></p>
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-muted">No practice questions available for this concept yet.</p>
+    {% endfor %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = '{{ csrf_token }}';
+
+// ── Audio player ────────────────────────────────────────────────────
+const audio   = document.getElementById('lesson-audio');
+const playBtn = document.getElementById('play-btn');
+const fill    = document.getElementById('audio-fill');
+const timeEl  = document.getElementById('audio-time');
+
+function toggleAudio() {
+  if (!audio) return;
+  if (audio.paused) { audio.play(); playBtn.innerHTML = '&#9646;&#9646;'; }
+  else              { audio.pause(); playBtn.innerHTML = '&#9654;'; }
+}
+if (audio) {
+  audio.addEventListener('timeupdate', () => {
+    if (!audio.duration) return;
+    const pct = (audio.currentTime / audio.duration) * 100;
+    if (fill) fill.style.width = pct + '%';
+    if (timeEl) {
+      const m = Math.floor(audio.currentTime / 60);
+      const s = Math.floor(audio.currentTime % 60);
+      timeEl.textContent = m + ':' + String(s).padStart(2, '0');
+    }
+  });
+  audio.addEventListener('ended', () => { if (playBtn) playBtn.innerHTML = '&#9654;'; });
+}
+function seekAudio(e) {
+  if (!audio || !audio.duration) return;
+  const bar = document.getElementById('audio-bar');
+  const rect = bar.getBoundingClientRect();
+  audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration;
+}
+
+// ── MCQ submission ──────────────────────────────────────────────────
+async function submitMCQ(e, qid) {
+  e.preventDefault();
+  const sel = document.querySelector(`[name=q${qid}]:checked`);
+  if (!sel) { showToast('Select an option first', 'error'); return; }
+  const idx = parseInt(sel.value);
+
+  const res = await fetch('/api/curriculum/attempts/submit/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF,
+               'Authorization': 'Bearer ' + (localStorage.getItem('access') || '') },
+    body: JSON.stringify({ question_id: qid, answer: { selected_index: idx } })
+  });
+  const data = await res.json();
+  const fb   = document.getElementById(`feedback-${qid}`);
+  fb.classList.remove('hidden');
+
+  if (data.attempt) {
+    const outcome = data.attempt.outcome;
+    fb.innerHTML = `<div class="message message-${outcome === 'correct' ? 'success' : 'error'}">${data.attempt.ai_feedback}</div>`;
+    const optEls = document.querySelectorAll(`#opts-${qid} .mcq-option`);
+    optEls[idx].classList.add(outcome === 'correct' ? 'correct' : 'wrong');
+    if (outcome === 'correct') { disableQuestion(qid); }
+    else if (data.clue) { showClue(qid, data.clue.text); }
+  }
+}
+
+async function submitPractical(e, qid) {
+  e.preventDefault();
+  const code = e.target.querySelector('textarea').value.trim();
+  if (!code) { showToast('Write your answer first', 'error'); return; }
+
+  const res = await fetch('/api/curriculum/attempts/submit/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF,
+               'Authorization': 'Bearer ' + (localStorage.getItem('access') || '') },
+    body: JSON.stringify({ question_id: qid, answer: { code } })
+  });
+  const data = await res.json();
+  const fb   = document.getElementById(`feedback-${qid}`);
+  fb.classList.remove('hidden');
+  if (data.attempt) {
+    fb.innerHTML = `<div class="message message-info">${data.attempt.ai_feedback}</div>`;
+    if (data.clue) showClue(qid, data.clue.text);
+  }
+}
+
+function showClue(qid, text) {
+  const box  = document.getElementById(`clue-${qid}`);
+  const para = document.getElementById(`clue-text-${qid}`);
+  if (box && para) { para.textContent = text; box.classList.remove('hidden'); }
+}
+
+function disableQuestion(qid) {
+  const card = document.getElementById(`q-${qid}`);
+  if (card) {
+    card.querySelectorAll('input,textarea,button[type=submit]').forEach(el => el.disabled = true);
+    card.querySelectorAll('.mcq-option').forEach(el => el.style.cursor = 'default');
+  }
+}
+</script>
+{% endblock %}

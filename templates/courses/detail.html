@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }}{% endblock %}
+{% block meta_desc %}{{ course.description|truncatechars:150 }}{% endblock %}
+
+{% block content %}
+
+<!-- Course hero -->
+<div class="course-detail-hero">
+  <div class="container">
+    <p class="text-xs" style="color:var(--orange);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;">
+      {{ course.subject_area.display_name }}
+    </p>
+    <h1 style="max-width:700px;">{{ course.title }}</h1>
+    <p style="max-width:640px;margin-top:.75rem;font-size:1rem;">{{ course.description }}</p>
+    <div style="display:flex;gap:1.5rem;margin-top:1rem;flex-wrap:wrap;">
+      <span style="color:rgba(255,255,255,.7);font-size:.85rem;">&#127891; {{ concept_count }} concepts</span>
+      <span style="color:rgba(255,255,255,.7);font-size:.85rem;">&#127760; {{ course.get_language_display }}</span>
+      <span style="color:rgba(255,255,255,.7);font-size:.85rem;">&#128336; {{ weeks.count }} week{{ weeks.count|pluralize }}</span>
+    </div>
+  </div>
+</div>
+
+<div class="container section-sm">
+  <div class="course-detail-layout">
+
+    <!-- Main content -->
+    <div>
+
+      <!-- What you'll learn -->
+      {% if weeks %}
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-body">
+          <h2 style="margin-bottom:1rem;">{{ T.course_what_learn }}</h2>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;">
+            {% for week in weeks %}
+              {% for concept in week.concepts.all|slice:":4" %}
+                <div style="display:flex;align-items:flex-start;gap:.5rem;font-size:.88rem;">
+                  <span style="color:var(--orange);margin-top:.1rem;">✓</span>
+                  {{ concept.title }}
+                </div>
+              {% endfor %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Curriculum -->
+      <h2 style="margin-bottom:1rem;">{{ T.course_curriculum }}</h2>
+      {% for week in weeks %}
+        <div class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)" id="wk-{{ week.pk }}">
+            <span>{{ T.course_week }} {{ week.number }}: {{ week.title }}</span>
+            <span class="arrow">&#8964;</span>
+          </div>
+          <div class="accordion-body">
+            {% for concept in week.concepts.all %}
+              <div class="accordion-row">
+                <span class="dot"></span>
+                <span>{{ T.course_day }} {{ concept.day_introduced }} — {{ concept.title }}</span>
+              </div>
+            {% empty %}
+              <div class="accordion-row"><span class="text-muted">No concepts yet.</span></div>
+            {% endfor %}
+          </div>
+        </div>
+      {% empty %}
+        <p class="text-muted">Course content is being prepared.</p>
+      {% endfor %}
+
+    </div>
+
+    <!-- Sticky sidebar -->
+    <div class="course-sidebar">
+      {% if course.thumbnail %}
+        <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" style="width:100%;">
+      {% else %}
+        <div style="aspect-ratio:16/9;background:linear-gradient(135deg,var(--orange-light),#fde68a);display:flex;align-items:center;justify-content:center;font-size:4rem;">
+          📚
+        </div>
+      {% endif %}
+
+      <div class="course-sidebar-price">
+        {% if course.price == 0 %}
+          <div class="price free">{{ T.course_free }}</div>
+        {% else %}
+          <div class="price">GHS {{ course.price }}</div>
+        {% endif %}
+      </div>
+
+      <div class="course-sidebar-actions">
+        {% if enrolled %}
+          <a href="{% url 'learner_dashboard' %}" class="btn btn-success btn-block btn-lg">{{ T.course_enrolled }}</a>
+        {% elif course.price == 0 %}
+          <form method="post" action="{% url 'cart_add' course.pk %}">
+            {% csrf_token %}
+            {% if not user.is_authenticated %}
+              <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary btn-block btn-lg">{{ T.course_enroll }}</a>
+            {% else %}
+              {% if in_cart %}
+                <a href="{% url 'cart' %}" class="btn btn-outline btn-block btn-lg">{{ T.course_in_cart }}</a>
+              {% else %}
+                <button type="submit" class="btn btn-primary btn-block btn-lg">{{ T.course_enroll }}</button>
+              {% endif %}
+            {% endif %}
+          </form>
+        {% else %}
+          {% if not user.is_authenticated %}
+            <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary btn-block btn-lg">{{ T.course_add_cart }}</a>
+          {% elif in_cart %}
+            <a href="{% url 'cart' %}" class="btn btn-outline btn-block btn-lg">{{ T.course_in_cart }}</a>
+          {% else %}
+            <form method="post" action="{% url 'cart_add' course.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary btn-block btn-lg">{{ T.course_add_cart }}</button>
+            </form>
+          {% endif %}
+        {% endif %}
+
+        <ul style="font-size:.85rem;color:var(--text-muted);line-height:2;">
+          <li>🗓 {{ weeks.count }} week{{ weeks.count|pluralize }}</li>
+          <li>📖 {{ concept_count }} concepts</li>
+          <li>🌍 {{ course.get_language_display }}</li>
+          <li>🏆 Certificate on completion</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+function toggleAccordion(header) {
+  const body = header.nextElementSibling;
+  const isOpen = body.classList.contains('open');
+  document.querySelectorAll('.accordion-header').forEach(h => h.classList.remove('open'));
+  document.querySelectorAll('.accordion-body').forEach(b => b.classList.remove('open'));
+  if (!isOpen) { header.classList.add('open'); body.classList.add('open'); }
+}
+// Open first week by default
+const firstHeader = document.querySelector('.accordion-header');
+if (firstHeader) toggleAccordion(firstHeader);
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}{{ T.catalog_title }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:2rem;padding-bottom:3rem;">
+
+  <h1 style="margin-bottom:1.5rem;">{{ T.catalog_title }}</h1>
+
+  <div class="catalog-layout">
+    <!-- Sidebar filters -->
+    <aside class="filter-sidebar">
+      <form method="get" action="{% url 'course_catalog' %}" id="filter-form">
+        {% if request.GET.q %}<input type="hidden" name="q" value="{{ request.GET.q }}">{% endif %}
+
+        <div class="filter-group">
+          <h4>{{ T.catalog_filter }}</h4>
+          <div class="filter-option {% if not active_subject %}active{% endif %}">
+            <a href="{% url 'course_catalog' %}{% if request.GET.q %}?q={{ request.GET.q }}{% endif %}" style="color:inherit;text-decoration:none;">{{ T.catalog_all }}</a>
+          </div>
+          {% for area in subject_areas %}
+            <div class="filter-option {% if active_subject == area.name %}active{% endif %}">
+              <a href="?subject={{ area.name }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" style="color:inherit;text-decoration:none;">
+                {{ area.display_name }}
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="filter-group">
+          <h4>Price</h4>
+          <div class="filter-option {% if active_price == 'free' %}active{% endif %}">
+            <a href="?price=free{% if active_subject %}&subject={{ active_subject }}{% endif %}" style="color:inherit;text-decoration:none;">{{ T.catalog_free }}</a>
+          </div>
+          <div class="filter-option {% if active_price == 'paid' %}active{% endif %}">
+            <a href="?price=paid{% if active_subject %}&subject={{ active_subject }}{% endif %}" style="color:inherit;text-decoration:none;">{{ T.catalog_paid }}</a>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <h4>Language</h4>
+          {% for code, name in LANGUAGES %}
+            <div class="filter-option {% if active_lang == code %}active{% endif %}">
+              <a href="?lang={{ code }}{% if active_subject %}&subject={{ active_subject }}{% endif %}" style="color:inherit;text-decoration:none;">{{ name }}</a>
+            </div>
+          {% endfor %}
+        </div>
+
+        {% if active_subject or active_price or active_lang or search_query %}
+          <a href="{% url 'course_catalog' %}" class="btn btn-ghost btn-sm btn-block" style="margin-top:.5rem;">Clear Filters</a>
+        {% endif %}
+      </form>
+    </aside>
+
+    <!-- Course grid -->
+    <div>
+      {% if search_query %}
+        <p class="text-muted" style="margin-bottom:1rem;">Results for "<strong>{{ search_query }}</strong>" — {{ courses|length }} course{{ courses|length|pluralize }}</p>
+      {% endif %}
+
+      {% if courses %}
+        <div class="course-grid">
+          {% for course in courses %}
+            <a href="{% url 'course_detail' course.pk %}" class="card course-card" style="text-decoration:none;">
+              <div class="course-card-thumb">
+                {% if course.thumbnail %}
+                  <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}">
+                {% else %}
+                  <div class="no-thumb">
+                    {% if course.subject_area.name == 'programming' %}💻
+                    {% elif course.subject_area.name == 'aws' %}☁️
+                    {% elif course.subject_area.name == 'ml_ai' %}🤖
+                    {% elif course.subject_area.name == 'blockchain' %}⛓️
+                    {% elif course.subject_area.name == 'ai_agents' %}🧠
+                    {% elif course.subject_area.name == 'devops' %}🔧
+                    {% elif course.subject_area.name == 'security' %}🔒
+                    {% else %}📚{% endif %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="course-card-body">
+                <div class="course-card-subject">{{ course.subject_area.display_name }}</div>
+                <div class="course-card-title">{{ course.title }}</div>
+                <div class="course-card-price">
+                  {% if course.price == 0 %}
+                    <span class="free">{{ T.course_free }}</span>
+                  {% else %}
+                    GHS {{ course.price }}
+                  {% endif %}
+                </div>
+                <div class="course-card-lang">&#127760; {{ course.get_language_display }}</div>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="text-align:center;padding:4rem 0;">
+          <p style="font-size:3rem;margin-bottom:1rem;">📭</p>
+          <p class="text-muted">{{ T.catalog_no_results }}</p>
+          <a href="{% url 'course_catalog' %}" class="btn btn-outline" style="margin-top:1rem;">{{ T.catalog_all }}</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
