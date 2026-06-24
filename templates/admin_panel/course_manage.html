@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Manage {{ course.title }}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  {% include 'admin_panel/_sidebar.html' with active='courses' %}
+
+  <div class="admin-content">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.75rem;margin-bottom:1.5rem;">
+      <div>
+        <h1 style="margin-bottom:.3rem;">{{ course.title }}</h1>
+        <p style="color:var(--text-muted);">
+          {{ course.subject_area.display_name }} ·
+          {% if course.price == 0 %}Free{% else %}GHS {{ course.price }}{% endif %} ·
+          {% if course.is_published %}<span style="color:#27ae60;">Published</span>{% else %}<span style="color:var(--text-muted);">Draft</span>{% endif %}
+        </p>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <a href="{% url 'course_edit' course.pk %}" class="btn btn-ghost btn-sm">Edit details</a>
+        <a href="{% url 'week_create' course.pk %}" class="btn btn-primary btn-sm">+ Add Week</a>
+        <form method="post" action="{% url 'admin_course_toggle' course.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm {% if course.is_published %}btn-ghost{% else %}btn-primary{% endif %}">
+            {% if course.is_published %}Unpublish{% else %}Publish{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    {% for week in weeks %}
+      <div class="card" style="margin-bottom:1.25rem;">
+        <div class="card-body" style="padding:1.25rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;">
+            <h3>Week {{ week.number }}: {{ week.title }}</h3>
+            <div style="display:flex;gap:.4rem;">
+              <a href="{% url 'concept_create' week.pk %}" class="btn btn-ghost btn-sm">+ Concept</a>
+              <a href="{% url 'week_edit' week.pk %}" class="btn btn-ghost btn-sm">Edit</a>
+              <form method="post" action="{% url 'week_delete' week.pk %}" onsubmit="return confirm('Delete this week and all its concepts?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-ghost btn-sm" style="color:#c0392b;">Delete</button>
+              </form>
+            </div>
+          </div>
+          {% if week.summary %}<p style="color:var(--text-muted);margin:.3rem 0 .75rem;">{{ week.summary }}</p>{% endif %}
+
+          {% for concept in week.concepts.all %}
+            <div style="border:1px solid var(--border);border-radius:8px;padding:.85rem;margin-top:.6rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;">
+                <div>
+                  <strong>Day {{ concept.day_introduced }} · {{ concept.title }}</strong>
+                  <span style="color:var(--text-muted);font-size:.85rem;">
+                    ({{ concept.questions.count }} question{{ concept.questions.count|pluralize }})
+                  </span>
+                </div>
+                <div style="display:flex;gap:.4rem;">
+                  <a href="{% url 'question_create' concept.pk %}" class="btn btn-ghost btn-sm">+ Question</a>
+                  <a href="{% url 'concept_edit' concept.pk %}" class="btn btn-ghost btn-sm">Edit</a>
+                  <form method="post" action="{% url 'concept_delete' concept.pk %}" onsubmit="return confirm('Delete this concept?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ghost btn-sm" style="color:#c0392b;">Delete</button>
+                  </form>
+                </div>
+              </div>
+
+              {% for q in concept.questions.all %}
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem .2rem;border-top:1px dashed var(--border);margin-top:.5rem;">
+                  <span style="font-size:.88rem;">
+                    [{{ q.get_difficulty_display }}] {{ q.get_question_type_display }} — {{ q.content.prompt|truncatechars:60 }}
+                  </span>
+                  <span style="display:flex;gap:.4rem;">
+                    <a href="{% url 'question_edit' q.pk %}" class="btn btn-ghost btn-sm">Edit</a>
+                    <form method="post" action="{% url 'question_delete' q.pk %}" onsubmit="return confirm('Delete this question?');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-ghost btn-sm" style="color:#c0392b;">×</button>
+                    </form>
+                  </span>
+                </div>
+              {% endfor %}
+            </div>
+          {% empty %}
+            <p style="color:var(--text-muted);margin-top:.6rem;">No concepts yet. <a href="{% url 'concept_create' week.pk %}" style="color:var(--orange);">Add one</a>.</p>
+          {% endfor %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="card"><div class="card-body" style="padding:2rem;text-align:center;color:var(--text-muted);">
+        No weeks yet. <a href="{% url 'week_create' course.pk %}" style="color:var(--orange);">Add the first week</a> to start building your curriculum.
+      </div></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

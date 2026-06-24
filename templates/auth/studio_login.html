@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Studio Login{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card" style="max-width:420px;">
+    <div style="text-align:center;font-size:2rem;">🎬</div>
+    <h1 style="text-align:center;">Instructor Studio</h1>
+    <p class="sub" style="text-align:center;">Private access — instructors only.</p>
+
+    <form method="post" action="{% url 'studio_login' %}">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Email or Username</label>
+        <input class="form-control" type="text" name="username" required autofocus autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-control" type="password" name="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg">Enter Studio</button>
+    </form>
+
+    <p class="auth-footer" style="text-align:center;">
+      Looking to learn? <a href="{% url 'login' %}">Learner login</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

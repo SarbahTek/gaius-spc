@@ -25,6 +25,7 @@ urlpatterns = [
     path("api/accounts/",   include("auth_manager.urls")),
     path("api/curriculum/", include("curriculum.urls")),
     path("api/admin/",      include("course_agent.urls")),
+    path("api/payments/",   include("payments.api_urls")),
     # Web / template routes
     path('',                include("web.urls")),
     path('',                include("payments.urls")),

@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from curriculum.models import SubjectArea, Course
 from .agent import CourseGenerationAgent
 from .models import CourseGenerationJob
-from .permissions import IsAdminRole
+from .permissions import IsAdminRole, IsInstructorOrAdmin
 from .serializers import CourseGenerationJobSerializer
 
 
@@ -23,7 +23,7 @@ class CourseGenerateView(APIView):
     Returns a job ID immediately; generation runs in a background thread.
     Poll /api/admin/generation-jobs/<id>/ to check status.
     """
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsInstructorOrAdmin]
     parser_classes     = [MultiPartParser, FormParser]
 
     def post(self, request):
@@ -67,7 +67,7 @@ class CourseGenerateView(APIView):
 
 class GenerationJobListView(generics.ListAPIView):
     """GET /api/admin/generation-jobs/ — lists the calling admin's jobs."""
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsInstructorOrAdmin]
     serializer_class   = CourseGenerationJobSerializer
 
     def get_queryset(self):
@@ -76,7 +76,7 @@ class GenerationJobListView(generics.ListAPIView):
 
 class GenerationJobDetailView(APIView):
     """GET /api/admin/generation-jobs/<id>/"""
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsInstructorOrAdmin]
 
     def get(self, request, pk):
         job = get_object_or_404(CourseGenerationJob, pk=pk, created_by=request.user)
@@ -90,10 +90,12 @@ class CoursePublishView(APIView):
     POST /api/admin/courses/<id>/publish/   → publish
     POST /api/admin/courses/<id>/unpublish/ → unpublish (pull back for edits)
     """
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsInstructorOrAdmin]
 
     def post(self, request, pk, action):
         course = get_object_or_404(Course, pk=pk)
+        if request.user.role != 'admin' and course.instructor_id != request.user.id:
+            return Response({'error': 'You can only publish your own courses.'}, status=403)
         if action == 'publish':
             course.is_published = True
         elif action == 'unpublish':

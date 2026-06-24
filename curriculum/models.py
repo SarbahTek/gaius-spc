@@ -58,6 +58,12 @@ class Course(models.Model):
 
     title         = models.CharField(max_length=200)
     subject_area  = models.ForeignKey(SubjectArea, on_delete=models.PROTECT, related_name="courses")
+    instructor    = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="courses_created",
+    )
     description   = models.TextField()
     thumbnail     = models.ImageField(upload_to='course_thumbnails/', blank=True, null=True)
     price         = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
@@ -275,6 +281,7 @@ class ConceptMastery(models.Model):
     first_attempted_at = models.DateTimeField(null=True, blank=True)
     last_attempted_at  = models.DateTimeField(null=True, blank=True)
     mastered_at        = models.DateTimeField(null=True, blank=True)
+    lesson_completed_at = models.DateTimeField(null=True, blank=True)  # Day-1 lesson marked done
 
     class Meta:
         unique_together      = ("user", "concept")
@@ -471,6 +478,110 @@ class BuildLog(models.Model):
     class Meta:
         unique_together = ("user", "week", "day_number")
         ordering        = ["week", "day_number"]
+
+
+# ─────────────────────────────────────────────
+# THE SPC LADDER — Day-1 test sets + Days 2–6 daily problems
+#
+# Structure (per the SPC algorithm): one Concept per Week.
+#   Day 1  : lesson → Test Set A (10 Q) → (later same day) Test Set B (10 Q)
+#   Days 2-6: one cumulative "Problem of the Day" each — daily practice.
+# Master the week (both sets passed + all daily problems passed) → next week.
+# ─────────────────────────────────────────────
+
+class TestSession(models.Model):
+    """Day-1 assessment: two sets of 10 questions; set B is learner-scheduled."""
+    SET_A = 1
+    SET_B = 2
+
+    STATUS_LOCKED    = "locked"      # set B before its scheduled time
+    STATUS_SCHEDULED = "scheduled"   # set B time chosen, not yet due
+    STATUS_AVAILABLE = "available"   # ready to take
+    STATUS_PASSED    = "passed"
+    STATUS_FAILED    = "failed"
+
+    STATUS_CHOICES = [
+        (STATUS_LOCKED, "Locked"), (STATUS_SCHEDULED, "Scheduled"),
+        (STATUS_AVAILABLE, "Available"), (STATUS_PASSED, "Passed"), (STATUS_FAILED, "Failed"),
+    ]
+
+    PASS_THRESHOLD = 80.0  # % of the 10 questions correct
+
+    user        = user_fk(related_name="test_sessions")
+    concept     = models.ForeignKey(Concept, on_delete=models.CASCADE, related_name="test_sessions")
+    set_number  = models.PositiveSmallIntegerField(choices=[(SET_A, "Set A"), (SET_B, "Set B")])
+    status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_AVAILABLE)
+    question_ids = models.JSONField(default=list)       # the 10 chosen questions
+    correct_count = models.PositiveIntegerField(default=0)
+    score        = models.FloatField(default=0.0)
+    scheduled_for = models.DateTimeField(null=True, blank=True)  # learner-chosen (set B)
+    started_at   = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "concept", "set_number")
+        ordering        = ["concept", "set_number"]
+
+    def __str__(self):
+        return f"{self.user} · {self.concept.title} · Set {self.set_number} · {self.status}"
+
+    @property
+    def is_passed(self):
+        return self.status == self.STATUS_PASSED
+
+
+class DayProblem(models.Model):
+    """A 'Problem of the Day' for Days 2–6 of a week (cumulative practical)."""
+    week         = models.ForeignKey(Week, on_delete=models.CASCADE, related_name="day_problems")
+    day_number   = models.PositiveIntegerField(validators=[MinValueValidator(2), MaxValueValidator(6)])
+    title        = models.CharField(max_length=200)
+    prompt       = models.TextField()
+    starter_code = models.TextField(blank=True)
+    answer_rubric = models.JSONField(default=dict)    # {approach, key_points}
+    is_cumulative = models.BooleanField(default=True)  # combines prior weeks' concepts
+    is_ai_generated = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ("week", "day_number")
+        ordering        = ["week", "day_number"]
+
+    def __str__(self):
+        return f"{self.week} · Day {self.day_number} · {self.title}"
+
+
+class DayProblemSubmission(models.Model):
+    STATUS_EVALUATING      = "evaluating"
+    STATUS_PASSED          = "passed"
+    STATUS_REVISION_NEEDED = "revision_needed"
+
+    STATUS_CHOICES = [
+        (STATUS_EVALUATING, "Evaluating"),
+        (STATUS_PASSED, "Passed"),
+        (STATUS_REVISION_NEEDED, "Revision needed"),
+    ]
+
+    user            = user_fk(related_name="day_problem_submissions")
+    problem         = models.ForeignKey(DayProblem, on_delete=models.CASCADE, related_name="submissions")
+    github_url      = models.URLField(blank=True)
+    code_submission = models.TextField(blank=True)
+    status          = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_EVALUATING)
+    ai_score        = models.JSONField(null=True, blank=True)
+    ai_feedback     = models.TextField(blank=True)
+    submission_count = models.PositiveIntegerField(default=0)
+    submitted_at    = models.DateTimeField(null=True, blank=True)
+    evaluated_at    = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ("user", "problem")
+        ordering        = ["problem"]
+
+    def __str__(self):
+        return f"{self.user} · {self.problem} · {self.status}"
+
+    @property
+    def is_passed(self):
+        return self.status == self.STATUS_PASSED
 
     def __str__(self):
         return f"{self.user} · {self.week} · Day {self.day_number}"

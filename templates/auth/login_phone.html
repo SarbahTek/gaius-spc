@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Log in with phone{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card" style="max-width:440px;text-align:center;">
+    <div style="font-size:2.5rem;">📱</div>
+    <h1>Log in with phone</h1>
+
+    {% if step == 'enter_code' %}
+      <p class="sub">We sent a login code to<br><strong>{{ phone }}</strong></p>
+      <form method="post" action="{% url 'login_phone' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="verify">
+        <div class="form-group">
+          <input class="form-control" type="text" name="code" inputmode="numeric" maxlength="6"
+                 pattern="[0-9]{6}" placeholder="••••••" required autofocus
+                 style="text-align:center;font-size:1.6rem;letter-spacing:.6rem;">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">Verify &amp; Log In</button>
+      </form>
+      <form method="post" action="{% url 'login_phone' %}" style="margin-top:1rem;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="resend">
+        <input type="hidden" name="phone_number" value="{{ phone }}">
+        <button type="submit" class="btn btn-ghost btn-block">Resend code</button>
+      </form>
+    {% else %}
+      <p class="sub">Enter your phone number and we’ll text you a login code.</p>
+      <form method="post" action="{% url 'login_phone' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="request">
+        <div class="form-group">
+          <input class="form-control" type="tel" name="phone_number" required autofocus
+                 placeholder="+233…" value="{{ phone }}" autocomplete="tel">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">Send Code</button>
+      </form>
+    {% endif %}
+
+    <p class="auth-footer">
+      Prefer a password? <a href="{% url 'login' %}">Log in normally</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

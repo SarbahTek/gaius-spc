@@ -4,19 +4,15 @@
 
 {% block content %}
 <div class="admin-layout">
-  <aside class="admin-sidebar">
-    <div class="admin-sidebar-logo">SPC Admin</div>
-    <a href="{% url 'admin_dashboard' %}" class="admin-nav-item"><span class="icon">📊</span> Dashboard</a>
-    <a href="{% url 'admin_courses' %}" class="admin-nav-item active"><span class="icon">📚</span> {{ T.admin_courses }}</a>
-    <a href="{% url 'admin_students' %}" class="admin-nav-item"><span class="icon">👥</span> {{ T.admin_students }}</a>
-    <a href="{% url 'admin_upload' %}" class="admin-nav-item"><span class="icon">⬆</span> {{ T.admin_upload }}</a>
-    <a href="/admin/" class="admin-nav-item"><span class="icon">⚙</span> Django Admin</a>
-  </aside>
+  {% include 'admin_panel/_sidebar.html' with active='courses' %}
 
   <div class="admin-content">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:.75rem;">
       <h1>{{ T.admin_courses }}</h1>
-      <a href="{% url 'admin_upload' %}" class="btn btn-primary">+ Generate from PDF</a>
+      <div style="display:flex;gap:.5rem;">
+        <a href="{% url 'course_create' %}" class="btn btn-primary">+ New Course</a>
+        <a href="{% url 'admin_upload' %}" class="btn btn-ghost">⬆ Generate from PDF</a>
+      </div>
     </div>
 
     <div class="card">
@@ -51,14 +47,16 @@
                 </td>
                 <td>{{ course.created_at|date:"M j, Y" }}</td>
                 <td>
-                  <div style="display:flex;gap:.4rem;">
-                    <a href="/admin/curriculum/course/{{ course.pk }}/change/" class="btn btn-ghost btn-sm">Edit</a>
+                  <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
+                    <a href="{% url 'course_manage' course.pk %}" class="btn btn-ghost btn-sm">Manage</a>
+                    <a href="{% url 'course_edit' course.pk %}" class="btn btn-ghost btn-sm">Edit</a>
                     <form method="post" action="{% url 'admin_course_toggle' course.pk %}">
                       {% csrf_token %}
                       <button type="submit" class="btn btn-sm {% if course.is_published %}btn-ghost{% else %}btn-primary{% endif %}">
                         {% if course.is_published %}{{ T.admin_unpublish }}{% else %}{{ T.admin_publish }}{% endif %}
                       </button>
                     </form>
+                    <a href="{% url 'course_delete' course.pk %}" class="btn btn-ghost btn-sm" style="color:#c0392b;">Delete</a>
                   </div>
                 </td>
               </tr>

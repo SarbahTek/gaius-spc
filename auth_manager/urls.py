@@ -11,5 +11,7 @@ urlpatterns = [
     path("token/refresh/", TokenRefreshView.as_view(),        name="auth-token-refresh"),
     path("me/",            views.MeView.as_view(),            name="auth-me"),
 
-   
+    # ── OTP (email verification + phone login) ────────────────────────
+    path("otp/request/",   views.OtpRequestView.as_view(),    name="auth-otp-request"),
+    path("otp/verify/",    views.OtpVerifyView.as_view(),     name="auth-otp-verify"),
 ]

@@ -14,6 +14,18 @@ import os
 from pathlib import Path
 from datetime import timedelta
 
+import dj_database_url
+
+
+def _env_bool(key, default=False):
+    return os.environ.get(key, str(default)).lower() in ("1", "true", "yes", "on")
+
+
+def _env_list(key, default=""):
+    raw = os.environ.get(key, default)
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,12 +34,27 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-lg^$q6zxi3(bpmv&g=gf4a^!8_28xf@m4wzqg80*2dbr%pve@0'
+# Old dev default (kept as fallback for local-only use):
+# SECRET_KEY = 'django-insecure-lg^$q6zxi3(bpmv&g=gf4a^!8_28xf@m4wzqg80*2dbr%pve@0'
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-lg^$q6zxi3(bpmv&g=gf4a^!8_28xf@m4wzqg80*2dbr%pve@0',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Old: DEBUG = True
+DEBUG = _env_bool('DJANGO_DEBUG', default=True)
 
-ALLOWED_HOSTS = []
+# Old: ALLOWED_HOSTS = []
+ALLOWED_HOSTS = _env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
+# Render injects the external hostname here.
+_render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if _render_host:
+    ALLOWED_HOSTS.append(_render_host)
+
+CSRF_TRUSTED_ORIGINS = _env_list('DJANGO_CSRF_TRUSTED_ORIGINS')
+if _render_host:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{_render_host}')
 
 
 # Application definition
@@ -76,11 +103,11 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
  
-# ── CORS (adjust ALLOWED_ORIGINS for your frontend URL) ───────────────
+# ── CORS (extra origins via DJANGO_CORS_ALLOWED_ORIGINS, comma-separated) ──
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:8080",
-]
+] + _env_list('DJANGO_CORS_ALLOWED_ORIGINS')
 CORS_ALLOW_CREDENTIALS = True
 
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 days
@@ -88,6 +115,9 @@ SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 days
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise serves static files in production (right after SecurityMiddleware).
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -121,11 +151,20 @@ WSGI_APPLICATION = 'spc_campus.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+# Local dev defaults to SQLite; production sets DATABASE_URL (Render Postgres).
+# Old:
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+        ssl_require=_env_bool('DATABASE_SSL_REQUIRE', default=False),
+    )
 }
 
 
@@ -165,6 +204,14 @@ USE_TZ = True
 
 STATIC_URL  = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'   # collectstatic target (served by WhiteNoise)
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 MEDIA_URL  = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -187,6 +234,44 @@ LANGUAGES = [
 ]
 LOCALE_PATHS = [BASE_DIR / 'locale']
 
+# ── Email (OTP delivery) ───────────────────────────────────────────────
+# Dev prints emails to the console; production sends real email via SMTP env vars.
+if _env_bool('EMAIL_USE_SMTP', default=False):
+    EMAIL_BACKEND      = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST         = os.environ.get('EMAIL_HOST', '')
+    EMAIL_PORT         = int(os.environ.get('EMAIL_PORT', '587'))
+    EMAIL_HOST_USER    = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+    EMAIL_USE_TLS      = _env_bool('EMAIL_USE_TLS', default=True)
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'SPC Campus <no-reply@spccampus.com>')
+
+# ── SMS (OTP for phone login) — provider integration point ─────────────
+# Leave SMS_API_KEY empty until a provider is chosen; sms.send_sms() degrades
+# to a logged/printed stub so phone-OTP can be exercised locally.
+SMS_API_KEY      = os.environ.get('SMS_API_KEY', '')
+SMS_SENDER_ID    = os.environ.get('SMS_SENDER_ID', 'SPCCampus')
+SMS_PROVIDER_URL = os.environ.get('SMS_PROVIDER_URL', '')
+
+# ── OTP policy ─────────────────────────────────────────────────────────
+OTP_EXPIRY_MINUTES = int(os.environ.get('OTP_EXPIRY_MINUTES', '10'))
+OTP_MAX_ATTEMPTS   = int(os.environ.get('OTP_MAX_ATTEMPTS', '5'))
+
+# ── Learning ladder ────────────────────────────────────────────────────
+# How many questions per Day-1 test set, and the minimum gap (hours) before the
+# next Problem-of-the-Day unlocks — this enforces *daily* practice. Set the gap
+# to 0 to disable the drip (useful for testing / demos).
+LADDER_TEST_SET_SIZE   = int(os.environ.get('LADDER_TEST_SET_SIZE', '10'))
+LADDER_DAILY_DRIP_HOURS = int(os.environ.get('LADDER_DAILY_DRIP_HOURS', '20'))
+# Minimum hours after passing Set A before Set B can be taken (same day, later).
+LADDER_SET_B_MIN_HOURS = int(os.environ.get('LADDER_SET_B_MIN_HOURS', '0'))
+
+# ── Studio (instructor portal) owners ──────────────────────────────────
+# Only these accounts may access the instructor/admin studio. The public
+# site is learners-only. Comma-separated emails in DJANGO_OWNER_EMAILS.
+OWNER_EMAILS = _env_list('DJANGO_OWNER_EMAILS', 'kelvensarbah@gmail.com')
+
 # ── Paystack ───────────────────────────────────────────────────────────
 PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY', '')
 PAYSTACK_PUBLIC_KEY = os.environ.get('PAYSTACK_PUBLIC_KEY', '')
@@ -194,3 +279,19 @@ PAYSTACK_PUBLIC_KEY = os.environ.get('PAYSTACK_PUBLIC_KEY', '')
 # ── AI API keys (set in environment) ──────────────────────────────────
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 OPENAI_API_KEY    = os.environ.get('OPENAI_API_KEY', '')
+
+# ── GitHub (project / "problem of the day" repo assessment) ────────────
+# Public repos work with no token. Set a token to raise rate limits and reach
+# private repos the token can read. Private-access via GitHub App is a TODO.
+GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
+
+# ── Production security hardening (only when DEBUG is off) ─────────────
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # Render terminates TLS
+    SECURE_SSL_REDIRECT   = _env_bool('DJANGO_SECURE_SSL_REDIRECT', default=True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE    = True
+    SECURE_HSTS_SECONDS   = int(os.environ.get('DJANGO_HSTS_SECONDS', '0'))  # raise once HTTPS is verified
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD   = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True

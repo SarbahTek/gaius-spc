@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  {% include 'admin_panel/_sidebar.html' with active=active %}
+
+  <div class="admin-content">
+    <h1 style="margin-bottom:1.5rem;">{{ title }}</h1>
+
+    <div class="card" style="max-width:680px;">
+      <div class="card-body" style="padding:1.5rem;">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <div class="message message-error">{{ form.non_field_errors }}</div>
+          {% endif %}
+          {% for field in form %}
+            <div class="form-group">
+              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<small style="color:var(--text-muted);">{{ field.help_text }}</small>{% endif %}
+              {% for e in field.errors %}<small style="color:#c0392b;display:block;">{{ e }}</small>{% endfor %}
+            </div>
+          {% endfor %}
+          <div style="display:flex;gap:.6rem;margin-top:1rem;">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a href="{{ cancel_url }}" class="btn btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

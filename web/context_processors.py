@@ -47,7 +47,17 @@ def spc_globals(request):
     lang_map = dict(settings.LANGUAGES)
     translations = _load_lang(lang_code)
 
+    # Studio access flag (owner-only instructor portal).
+    is_owner = False
+    if request.user.is_authenticated:
+        try:
+            from web.views import is_owner as _is_owner
+            is_owner = _is_owner(request.user)
+        except Exception:
+            pass
+
     return {
+        'IS_OWNER':      is_owner,
         'CART_COUNT':    cart_count,
         'LANG_CODE':     lang_code,
         'LANG_LABEL':    lang_map.get(lang_code, 'English'),

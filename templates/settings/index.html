@@ -20,8 +20,24 @@
       {% if active_tab == 'profile' %}
         <h2>{{ T.settings_profile }}</h2>
         <p class="sub">Manage your public information.</p>
-        <form method="post" action="{% url 'settings_profile' %}">
+        <form method="post" action="{% url 'settings_profile' %}" enctype="multipart/form-data">
           {% csrf_token %}
+
+          <div class="form-group" style="display:flex;align-items:center;gap:1rem;">
+            {% if user.profile_photo %}
+              <img src="{{ user.profile_photo.url }}" alt="Profile photo"
+                   style="width:72px;height:72px;border-radius:50%;object-fit:cover;">
+            {% else %}
+              <span style="width:72px;height:72px;border-radius:50%;background:var(--orange);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:1.5rem;">
+                {{ user.first_name|first|upper|default:user.username|first|upper }}
+              </span>
+            {% endif %}
+            <div style="flex:1;">
+              <label class="form-label">Profile photo</label>
+              <input class="form-control" type="file" name="profile_photo" accept="image/*">
+            </div>
+          </div>
+
           <div class="grid-2">
             <div class="form-group">
               <label class="form-label">First Name</label>
@@ -32,23 +48,39 @@
               <input class="form-control" type="text" name="last_name" value="{{ user.last_name }}">
             </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Username</label>
-            <input class="form-control" type="text" value="{{ user.username }}" disabled>
-            <p class="form-hint">Username cannot be changed.</p>
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Username</label>
+              <input class="form-control" type="text" value="{{ user.username }}" disabled>
+              <p class="form-hint">Username cannot be changed.</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input class="form-control" type="email" value="{{ user.email }}" disabled>
+              <p class="form-hint">
+                {% if user.email_verified %}<span style="color:#27ae60;">✓ Verified</span>{% else %}Not verified{% endif %}
+              </p>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Email</label>
-            <input class="form-control" type="email" value="{{ user.email }}" disabled>
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Phone number</label>
+              <input class="form-control" type="tel" name="phone_number" value="{{ user.phone_number|default:'' }}" placeholder="+233…">
+              <p class="form-hint">
+                {% if user.phone_number %}
+                  {% if user.phone_verified %}<span style="color:#27ae60;">✓ Verified</span>
+                  {% else %}<a href="{% url 'verify_phone' %}" style="color:var(--orange);">Verify this number</a>{% endif %}
+                {% endif %}
+              </p>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date of birth</label>
+              <input class="form-control" type="date" name="date_of_birth" value="{{ user.date_of_birth|date:'Y-m-d' }}">
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Bio</label>
             <textarea class="form-control" name="bio" rows="3" placeholder="Tell us about yourself…">{{ user.bio }}</textarea>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Avatar URL</label>
-            <input class="form-control" type="url" name="avatar" value="{{ user.avatar }}" placeholder="https://...">
-            <p class="form-hint">Link to your profile picture.</p>
           </div>
           <button type="submit" class="btn btn-primary">{{ T.settings_save }}</button>
         </form>

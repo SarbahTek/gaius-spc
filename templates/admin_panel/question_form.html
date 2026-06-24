@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'create' %}New Question{% else %}Edit Question{% endif %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  {% include 'admin_panel/_sidebar.html' with active=active %}
+
+  <div class="admin-content">
+    <h1 style="margin-bottom:.4rem;">
+      {% if mode == 'create' %}Add Question{% else %}Edit Question{% endif %}
+    </h1>
+    <p style="color:var(--text-muted);margin-bottom:1.5rem;">Concept: {{ concept.title }}</p>
+
+    <div class="card" style="max-width:760px;">
+      <div class="card-body" style="padding:1.5rem;">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <div class="message message-error">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="form-group">
+            <label class="form-label">Question type</label>
+            {{ form.question_type }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Difficulty</label>
+            {{ form.difficulty }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prompt</label>
+            {{ form.prompt }}
+            {% for e in form.prompt.errors %}<small style="color:#c0392b;">{{ e }}</small>{% endfor %}
+          </div>
+
+          <!-- MCQ-only fields -->
+          <div id="mcq-fields">
+            <div class="form-group">
+              <label class="form-label">Option A</label>{{ form.option_a }}
+              {% for e in form.option_a.errors %}<small style="color:#c0392b;">{{ e }}</small>{% endfor %}
+            </div>
+            <div class="form-group"><label class="form-label">Option B</label>{{ form.option_b }}</div>
+            <div class="form-group"><label class="form-label">Option C</label>{{ form.option_c }}</div>
+            <div class="form-group"><label class="form-label">Option D</label>{{ form.option_d }}</div>
+            <div class="form-group">
+              <label class="form-label">Correct option</label>{{ form.correct_index }}
+              {% for e in form.correct_index.errors %}<small style="color:#c0392b;">{{ e }}</small>{% endfor %}
+            </div>
+            <div class="form-group"><label class="form-label">Explanation</label>{{ form.explanation }}</div>
+          </div>
+
+          <!-- Practical-only fields -->
+          <div id="practical-fields">
+            <div class="form-group"><label class="form-label">Starter code</label>{{ form.starter_code }}</div>
+            <div class="form-group">
+              <label class="form-label">Expected approach</label>{{ form.approach }}
+              {% for e in form.approach.errors %}<small style="color:#c0392b;">{{ e }}</small>{% endfor %}
+            </div>
+            <div class="form-group">
+              <label class="form-label">Key points</label>{{ form.key_points }}
+              <small style="color:var(--text-muted);">One per line.</small>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:.6rem;margin-top:1rem;">
+            <button type="submit" class="btn btn-primary">Save Question</button>
+            <a href="{{ cancel_url }}" class="btn btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const typeSel = document.querySelector('select[name="question_type"]');
+    const mcq = document.getElementById('mcq-fields');
+    const practical = document.getElementById('practical-fields');
+    function sync() {
+      const isMcq = typeSel.value === 'mcq';
+      mcq.style.display = isMcq ? '' : 'none';
+      practical.style.display = isMcq ? 'none' : '';
+    }
+    typeSel.addEventListener('change', sync);
+    sync();
+  })();
+</script>
+{% endblock %}

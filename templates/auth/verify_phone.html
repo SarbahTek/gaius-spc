@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Verify your phone{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card" style="max-width:440px;text-align:center;">
+    <div style="font-size:2.5rem;">📱</div>
+    <h1>Verify your phone</h1>
+    <p class="sub">We sent a 6-digit code to<br><strong>{{ phone }}</strong></p>
+
+    <form method="post" action="{% url 'verify_phone' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="verify">
+      <div class="form-group">
+        <input class="form-control" type="text" name="code" inputmode="numeric" maxlength="6"
+               pattern="[0-9]{6}" placeholder="••••••" required autofocus
+               style="text-align:center;font-size:1.6rem;letter-spacing:.6rem;">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block btn-lg">Verify Phone</button>
+    </form>
+
+    <form method="post" action="{% url 'verify_phone' %}" style="margin-top:1rem;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="resend">
+      <button type="submit" class="btn btn-ghost btn-block">Resend code</button>
+    </form>
+
+    <p class="auth-footer">
+      <a href="/settings/?tab=profile">&larr; Back to settings</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

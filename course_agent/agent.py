@@ -185,6 +185,7 @@ Rules:
             title        = c_data['title'],
             description  = c_data['description'],
             subject_area = job.subject_area,
+            instructor   = job.created_by,   # course is owned by whoever uploaded the PDF
             is_published = False,   # Admin must review before learners can access
         )
 

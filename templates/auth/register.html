@@ -7,34 +7,47 @@
     <h1>{{ T.register_title }}</h1>
     <p class="sub">{{ T.register_sub }}</p>
 
-    <form method="post" action="{% url 'register' %}">
+    <form method="post" action="{% url 'register' %}" enctype="multipart/form-data">
       {% csrf_token %}
 
-      <!-- Account type (inline) -->
-      <div class="form-group">
-        <label class="form-label">I am a...</label>
-        <div style="display:flex;gap:.75rem;">
-          <label style="flex:1;border:2px solid var(--border);border-radius:var(--radius);padding:.75rem;cursor:pointer;text-align:center;transition:all var(--transition);" id="lbl-student">
-            <input type="radio" name="role" value="student" class="account-type-radio" checked onchange="highlightRole()">
-            🎓 Student
-          </label>
-          <label style="flex:1;border:2px solid var(--border);border-radius:var(--radius);padding:.75rem;cursor:pointer;text-align:center;transition:all var(--transition);" id="lbl-instructor">
-            <input type="radio" name="role" value="instructor" class="account-type-radio" onchange="highlightRole()">
-            🏫 Instructor
-          </label>
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">First name</label>
+          <input class="form-control" type="text" name="first_name" required value="{{ form_data.first_name|default:'' }}" autocomplete="given-name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last name</label>
+          <input class="form-control" type="text" name="last_name" required value="{{ form_data.last_name|default:'' }}" autocomplete="family-name">
         </div>
       </div>
 
       <div class="grid-2">
         <div class="form-group">
           <label class="form-label">{{ T.register_username }}</label>
-          <input class="form-control" type="text" name="username" required autocomplete="username" autofocus>
+          <input class="form-control" type="text" name="username" required value="{{ form_data.username|default:'' }}" autocomplete="username">
         </div>
         <div class="form-group">
           <label class="form-label">{{ T.register_email }}</label>
-          <input class="form-control" type="email" name="email" required autocomplete="email">
+          <input class="form-control" type="email" name="email" required value="{{ form_data.email|default:'' }}" autocomplete="email">
         </div>
       </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">Phone number</label>
+          <input class="form-control" type="tel" name="phone_number" required value="{{ form_data.phone_number|default:'' }}" placeholder="+233…" autocomplete="tel">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date of birth</label>
+          <input class="form-control" type="date" name="date_of_birth" required value="{{ form_data.date_of_birth|default:'' }}" max="{{ today }}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Profile photo <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+        <input class="form-control" type="file" name="profile_photo" accept="image/*">
+      </div>
+
       <div class="grid-2">
         <div class="form-group">
           <label class="form-label">{{ T.register_pw1 }}</label>
@@ -46,6 +59,19 @@
         </div>
       </div>
       <p class="form-hint">Minimum 8 characters.</p>
+
+      <div class="form-group" style="margin-top:.5rem;">
+        <label style="display:flex;align-items:flex-start;gap:.6rem;cursor:pointer;font-size:.9rem;">
+          <input type="checkbox" name="terms_accepted" value="1" required style="margin-top:.2rem;"
+                 {% if form_data.terms_accepted %}checked{% endif %}>
+          <span>
+            I have read and accept the
+            <a href="{% url 'privacy_policy' %}" target="_blank" style="color:var(--orange);">Privacy Policy</a>
+            and
+            <a href="{% url 'terms' %}" target="_blank" style="color:var(--orange);">Terms of Service</a>.
+          </span>
+        </label>
+      </div>
 
       <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:1rem;">
         {{ T.register_btn }}
@@ -59,16 +85,4 @@
   </div>
 </div>
 
-{% block extra_js %}
-<script>
-function highlightRole() {
-  const s = document.querySelector('[name=role]:checked').value;
-  document.getElementById('lbl-student').style.borderColor    = s === 'student'    ? 'var(--orange)' : 'var(--border)';
-  document.getElementById('lbl-instructor').style.borderColor = s === 'instructor' ? 'var(--orange)' : 'var(--border)';
-  document.getElementById('lbl-student').style.background    = s === 'student'    ? 'var(--orange-light)' : '';
-  document.getElementById('lbl-instructor').style.background = s === 'instructor' ? 'var(--orange-light)' : '';
-}
-highlightRole();
-</script>
-{% endblock %}
 {% endblock %}

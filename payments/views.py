@@ -22,12 +22,34 @@ def cart_view(request):
 
 @login_required
 @require_POST
+def enroll_free(request, course_id):
+    """Direct enrollment for free (price == 0) courses — no Paystack."""
+    course = get_object_or_404(Course, pk=course_id, is_published=True)
+
+    if course.price and course.price > 0:
+        messages.error(request, 'This is a paid course. Please check out to enroll.')
+        return redirect('course_detail', pk=course_id)
+
+    Enrollment.objects.get_or_create(
+        user=request.user, course=course,
+        defaults={'amount_paid': 0},
+    )
+    messages.success(request, f'You are now enrolled in "{course.title}". Happy learning!')
+    return redirect('my_courses')
+
+
+@login_required
+@require_POST
 def cart_add(request, course_id):
     course = get_object_or_404(Course, pk=course_id, is_published=True)
 
     if Enrollment.objects.filter(user=request.user, course=course).exists():
         messages.info(request, 'You are already enrolled in this course.')
         return redirect('course_detail', pk=course_id)
+
+    if not course.price or course.price <= 0:
+        # Free courses skip the cart/Paystack flow entirely.
+        return enroll_free(request, course_id)
 
     cart, _ = Cart.objects.get_or_create(user=request.user)
     CartItem.objects.get_or_create(cart=cart, course=course)

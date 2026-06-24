@@ -1,0 +1,49 @@
+# Render blueprint — web service + managed Postgres for SPC Campus.
+# Deploy: push to GitHub, then "New + → Blueprint" in the Render dashboard.
+databases:
+  - name: spc-campus-db
+    plan: free
+    databaseName: spc_campus
+    user: spc_campus
+
+services:
+  - type: web
+    name: spc-campus
+    runtime: python
+    plan: free
+    region: oregon
+    branch: main
+    rootDir: SPC-Campus/spc_campus
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn spc_campus.wsgi:application"
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.4"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true        # Render generates a strong secret
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: "localhost,127.0.0.1"   # RENDER_EXTERNAL_HOSTNAME is added automatically
+      - key: DATABASE_URL
+        fromDatabase:
+          name: spc-campus-db
+          property: connectionString
+      - key: DATABASE_SSL_REQUIRE
+        value: "true"
+      - key: DJANGO_SECURE_SSL_REDIRECT
+        value: "true"
+      # Secrets to set in the Render dashboard (left blank here on purpose):
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: DJANGO_CORS_ALLOWED_ORIGINS
+        sync: false

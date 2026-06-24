@@ -1,0 +1,24 @@
+{% comment %}Shared portal sidebar. Pass `active` = dashboard|courses|students|upload {% endcomment %}
+<aside class="admin-sidebar">
+  <div class="admin-sidebar-logo">
+    {% if user.role == 'admin' %}SPC Admin{% else %}SPC Instructor{% endif %}
+  </div>
+  <a href="{% url 'admin_dashboard' %}" class="admin-nav-item {% if active == 'dashboard' %}active{% endif %}">
+    <span class="icon">📊</span> Dashboard
+  </a>
+  <a href="{% url 'admin_courses' %}" class="admin-nav-item {% if active == 'courses' %}active{% endif %}">
+    <span class="icon">📚</span> {{ T.admin_courses }}
+  </a>
+  <a href="{% url 'course_create' %}" class="admin-nav-item {% if active == 'create' %}active{% endif %}">
+    <span class="icon">➕</span> New Course
+  </a>
+  <a href="{% url 'admin_students' %}" class="admin-nav-item {% if active == 'students' %}active{% endif %}">
+    <span class="icon">👥</span> {{ T.admin_students }}
+  </a>
+  <a href="{% url 'admin_upload' %}" class="admin-nav-item {% if active == 'upload' %}active{% endif %}">
+    <span class="icon">⬆</span> {{ T.admin_upload }}
+  </a>
+  {% if user.is_superuser %}
+    <a href="/admin/" class="admin-nav-item"><span class="icon">⚙</span> Django Admin</a>
+  {% endif %}
+</aside>

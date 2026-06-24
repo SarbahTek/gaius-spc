@@ -4,7 +4,7 @@ from auth_manager.serializers import PublicUserSerializer
 from .models import (
     SubjectArea, Course, Week, Concept,
     Question, UserAttempt, ConceptMastery, DayProgress,
-    ConceptLesson,
+    ConceptLesson, Project,
 )
 
 
@@ -36,22 +36,46 @@ class WeekSerializer(serializers.ModelSerializer):
         fields = ("id", "number", "title", "summary", "concepts")
 
 
-class CourseListSerializer(serializers.ModelSerializer):
+class _CourseEnrollmentMixin(serializers.ModelSerializer):
+    """Shared computed fields for course serializers (mobile-facing)."""
+    subject_area = SubjectAreaSerializer(read_only=True)
+    thumbnail    = serializers.SerializerMethodField()
+    is_free      = serializers.SerializerMethodField()
+    is_enrolled  = serializers.SerializerMethodField()
+    instructor_name = serializers.CharField(source="instructor.username", read_only=True, default=None)
+
+    def get_thumbnail(self, obj):
+        request = self.context.get("request")
+        if obj.thumbnail and request:
+            return request.build_absolute_uri(obj.thumbnail.url)
+        return obj.thumbnail.url if obj.thumbnail else None
+
+    def get_is_free(self, obj):
+        return not obj.price or obj.price <= 0
+
+    def get_is_enrolled(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return False
+        return obj.enrollments.filter(user=request.user, is_active=True).exists()
+
+
+class CourseListSerializer(_CourseEnrollmentMixin):
     """Lightweight — list views only."""
-    subject_area = SubjectAreaSerializer(read_only=True)
 
     class Meta:
         model  = Course
-        fields = ("id", "title", "description", "subject_area")
+        fields = ("id", "title", "description", "subject_area", "price", "is_free",
+                  "language", "thumbnail", "instructor_name", "is_enrolled")
 
 
-class CourseDetailSerializer(serializers.ModelSerializer):
-    subject_area = SubjectAreaSerializer(read_only=True)
-    weeks        = WeekSerializer(many=True, read_only=True)
+class CourseDetailSerializer(_CourseEnrollmentMixin):
+    weeks = WeekSerializer(many=True, read_only=True)
 
     class Meta:
         model  = Course
-        fields = ("id", "title", "description", "subject_area", "weeks")
+        fields = ("id", "title", "description", "subject_area", "price", "is_free",
+                  "language", "thumbnail", "instructor_name", "is_enrolled", "weeks")
 
 
 # ─────────────────────────────────────────────
@@ -157,3 +181,33 @@ class ConceptLessonSerializer(serializers.ModelSerializer):
         if obj.audio_file and request:
             return request.build_absolute_uri(obj.audio_file.url)
         return None
+
+
+# ─────────────────────────────────────────────
+# PROJECTS (weekly capstone / problem of the day)
+# ─────────────────────────────────────────────
+
+class ProjectSerializer(serializers.ModelSerializer):
+    can_resubmit = serializers.BooleanField(read_only=True)
+    total_score  = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model  = Project
+        fields = ("id", "week", "title", "description", "github_url", "code_submission",
+                  "status", "submission_count", "ai_score", "ai_feedback_summary",
+                  "total_score", "can_resubmit", "submitted_at", "evaluated_at")
+        read_only_fields = ("id", "status", "submission_count", "ai_score",
+                            "ai_feedback_summary", "submitted_at", "evaluated_at")
+
+
+class ProjectSubmitSerializer(serializers.Serializer):
+    week_id         = serializers.IntegerField()
+    github_url      = serializers.URLField(required=False, allow_blank=True)
+    code_submission = serializers.CharField(required=False, allow_blank=True)
+    title           = serializers.CharField(required=False, allow_blank=True)
+    description     = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        if not attrs.get("github_url") and not attrs.get("code_submission"):
+            raise serializers.ValidationError("Provide a GitHub URL or paste your code.")
+        return attrs

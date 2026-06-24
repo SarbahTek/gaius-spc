@@ -41,18 +41,20 @@
 
         <!-- User dropdown -->
         <div class="dropdown">
-          <button class="navbar-links" onclick="toggleDropdown('user-menu')" style="display:flex;align-items:center;gap:.4rem;">
+          <button class="navbar-links" type="button" data-dropdown="user-menu" style="display:flex;align-items:center;gap:.4rem;">
             <span style="width:32px;height:32px;border-radius:50%;background:var(--orange);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;">
               {{ user.username|first|upper }}
             </span>
             &#9660;
           </button>
           <div class="dropdown-menu" id="user-menu">
-            {% if user.role == 'admin' %}
-              <a href="{% url 'admin_dashboard' %}">&#128187; {{ T.nav_dashboard }}</a>
+            {% if IS_OWNER %}
+              <a href="{% url 'admin_dashboard' %}">&#127916; {{ T.nav_dashboard }} (Studio)</a>
               <a href="{% url 'admin_courses' %}">&#128218; {{ T.admin_courses }}</a>
               <a href="{% url 'admin_students' %}">&#128100; {{ T.admin_students }}</a>
               <a href="{% url 'admin_upload' %}">&#11014; {{ T.admin_upload }}</a>
+              <div class="dropdown-divider"></div>
+              <a href="{% url 'learner_dashboard' %}">&#127891; Learner view</a>
             {% else %}
               <a href="{% url 'learner_dashboard' %}">&#127968; {{ T.nav_dashboard }}</a>
               <a href="{% url 'my_courses' %}">&#127891; {{ T.nav_my_courses }}</a>
@@ -74,7 +76,7 @@
 
       <!-- Language switcher -->
       <div class="dropdown">
-        <button class="navbar-links" onclick="toggleDropdown('lang-menu')" style="display:flex;align-items:center;gap:.3rem;">
+        <button class="navbar-links" type="button" data-dropdown="lang-menu" style="display:flex;align-items:center;gap:.3rem;">
           &#127758; {{ LANG_LABEL }} &#9660;
         </button>
         <div class="dropdown-menu" id="lang-menu">

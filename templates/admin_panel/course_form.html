@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'create' %}New Course{% else %}Edit Course{% endif %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  {% include 'admin_panel/_sidebar.html' with active=active %}
+
+  <div class="admin-content">
+    <h1 style="margin-bottom:1.5rem;">
+      {% if mode == 'create' %}Create a Course{% else %}Edit “{{ course.title }}”{% endif %}
+    </h1>
+
+    <div class="card" style="max-width:760px;">
+      <div class="card-body" style="padding:1.5rem;">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <div class="message message-error">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="form-group">
+            <label class="form-label">Title</label>
+            {{ form.title }}
+            {% for e in form.title.errors %}<small style="color:#c0392b;">{{ e }}</small>{% endfor %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Subject area</label>
+            {{ form.subject_area }}
+            {% for e in form.subject_area.errors %}<small style="color:#c0392b;">{{ e }}</small>{% endfor %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            {{ form.description }}
+            {% for e in form.description.errors %}<small style="color:#c0392b;">{{ e }}</small>{% endfor %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Language</label>
+            {{ form.language }}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Pricing</label>
+            <div style="display:flex;gap:1.5rem;margin:.4rem 0;">
+              {% for radio in form.pricing %}
+                <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;">
+                  {{ radio.tag }} {{ radio.choice_label }}
+                </label>
+              {% endfor %}
+            </div>
+            {% for e in form.pricing.errors %}<small style="color:#c0392b;">{{ e }}</small>{% endfor %}
+          </div>
+
+          <div class="form-group" id="price-group">
+            <label class="form-label">Price (GHS)</label>
+            {{ form.price }}
+            {% for e in form.price.errors %}<small style="color:#c0392b;">{{ e }}</small>{% endfor %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Thumbnail (optional)</label>
+            {{ form.thumbnail }}
+          </div>
+
+          <div style="display:flex;gap:.6rem;margin-top:1rem;">
+            <button type="submit" class="btn btn-primary">
+              {% if mode == 'create' %}Create Course{% else %}Save Changes{% endif %}
+            </button>
+            <a href="{% url 'admin_courses' %}" class="btn btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const radios = document.querySelectorAll('input[name="pricing"]');
+    const priceGroup = document.getElementById('price-group');
+    function sync() {
+      const sel = document.querySelector('input[name="pricing"]:checked');
+      priceGroup.style.display = (sel && sel.value === 'paid') ? '' : 'none';
+    }
+    radios.forEach(r => r.addEventListener('change', sync));
+    sync();
+  })();
+</script>
+{% endblock %}

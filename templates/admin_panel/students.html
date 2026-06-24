@@ -4,14 +4,7 @@
 
 {% block content %}
 <div class="admin-layout">
-  <aside class="admin-sidebar">
-    <div class="admin-sidebar-logo">SPC Admin</div>
-    <a href="{% url 'admin_dashboard' %}" class="admin-nav-item"><span class="icon">📊</span> Dashboard</a>
-    <a href="{% url 'admin_courses' %}" class="admin-nav-item"><span class="icon">📚</span> {{ T.admin_courses }}</a>
-    <a href="{% url 'admin_students' %}" class="admin-nav-item active"><span class="icon">👥</span> {{ T.admin_students }}</a>
-    <a href="{% url 'admin_upload' %}" class="admin-nav-item"><span class="icon">⬆</span> {{ T.admin_upload }}</a>
-    <a href="/admin/" class="admin-nav-item"><span class="icon">⚙</span> Django Admin</a>
-  </aside>
+  {% include 'admin_panel/_sidebar.html' with active='students' %}
 
   <div class="admin-content">
     <h1 style="margin-bottom:1.5rem;">{{ T.admin_students }}</h1>

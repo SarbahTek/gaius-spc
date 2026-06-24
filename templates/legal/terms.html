@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Terms of Service{% endblock %}
+
+{% block content %}
+<div style="max-width:820px;margin:2rem auto;padding:0 1.25rem;line-height:1.7;">
+  <h1>Terms of Service</h1>
+  <p style="color:var(--text-muted);">Last updated: {% now "F j, Y" %}</p>
+
+  <h3>1. Acceptance</h3>
+  <p>By creating an account you agree to these Terms and to our Privacy Policy.
+  If you do not agree, please do not use SPC Campus.</p>
+
+  <h3>2. Your account</h3>
+  <p>You are responsible for keeping your login credentials secure and for all
+  activity under your account. Provide accurate information when registering.</p>
+
+  <h3>3. Courses and content</h3>
+  <p>Course content is for your personal learning. You may not redistribute,
+  resell, or share paid course materials without permission.</p>
+
+  <h3>4. Payments and refunds</h3>
+  <p>Paid courses are charged in Ghana Cedis (GHS) via Paystack. Free courses can
+  be enrolled at no cost. Refund eligibility is handled case by case.</p>
+
+  <h3>5. Acceptable use</h3>
+  <p>You agree not to misuse the platform, attempt to disrupt its operation, or
+  infringe the rights of other learners or instructors.</p>
+
+  <h3>6. Changes</h3>
+  <p>We may update these Terms from time to time. Continued use after changes
+  constitutes acceptance of the updated Terms.</p>
+
+  <h3>7. Contact</h3>
+  <p>Questions? Reach us at <a href="mailto:support@spccampus.com" style="color:var(--orange);">support@spccampus.com</a>.</p>
+
+  <p style="margin-top:2rem;"><a href="{% url 'register' %}" style="color:var(--orange);">&larr; Back to sign up</a></p>
+</div>
+{% endblock %}

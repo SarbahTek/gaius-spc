@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Confirm delete{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  {% include 'admin_panel/_sidebar.html' with active='courses' %}
+
+  <div class="admin-content">
+    <h1 style="margin-bottom:1.5rem;">Confirm deletion</h1>
+
+    <div class="card" style="max-width:560px;">
+      <div class="card-body" style="padding:1.5rem;">
+        {% if warning %}
+          <div class="message message-error">{{ warning }}</div>
+          <a href="{{ cancel_url }}" class="btn btn-ghost">Back</a>
+        {% else %}
+          <p style="margin-bottom:1.25rem;">
+            Are you sure you want to delete {{ object_label }}? This cannot be undone.
+          </p>
+          <form method="post">
+            {% csrf_token %}
+            <div style="display:flex;gap:.6rem;">
+              <button type="submit" class="btn btn-primary" style="background:#c0392b;border-color:#c0392b;">
+                Yes, delete
+              </button>
+              <a href="{{ cancel_url }}" class="btn btn-ghost">Cancel</a>
+            </div>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy{% endblock %}
+
+{% block content %}
+<div style="max-width:820px;margin:2rem auto;padding:0 1.25rem;line-height:1.7;">
+  <h1>Privacy Policy</h1>
+  <p style="color:var(--text-muted);">Last updated: {% now "F j, Y" %}</p>
+
+  <h3>1. Information we collect</h3>
+  <p>When you create an SPC Campus account we collect your name, username, email
+  address, date of birth, and (optionally) a profile photo. As you learn, we
+  store your course enrolments, answers, mastery progress, and payment records.</p>
+
+  <h3>2. How we use it</h3>
+  <p>Your information powers your personalised learning experience — tracking
+  mastery, unlocking content, issuing certificates, and processing payments. We
+  use your date of birth to confirm eligibility and tailor content.</p>
+
+  <h3>3. Payments</h3>
+  <p>Payments are processed securely by Paystack. We do not store your card
+  details on our servers.</p>
+
+  <h3>4. Data protection</h3>
+  <p>We apply industry-standard safeguards to protect your data and never sell
+  your personal information to third parties.</p>
+
+  <h3>5. Your rights</h3>
+  <p>You may access, correct, or request deletion of your personal data at any
+  time by contacting our support team.</p>
+
+  <h3>6. Contact</h3>
+  <p>Questions about this policy? Reach us at <a href="mailto:privacy@spccampus.com" style="color:var(--orange);">privacy@spccampus.com</a>.</p>
+
+  <p style="margin-top:2rem;"><a href="{% url 'register' %}" style="color:var(--orange);">&larr; Back to sign up</a></p>
+</div>
+{% endblock %}
